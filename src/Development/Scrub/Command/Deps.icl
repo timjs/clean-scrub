@@ -10,7 +10,7 @@ import Data.String
 import Data.Tuple
 
 import qualified Data.List as List
-from Data.List import instance Functor []
+from Data.List import instance Functor [], instance toString [], instance fromString []
 import qualified Data.Set as Set
 from Data.Set import :: Set
 
@@ -34,14 +34,11 @@ run args world
 
 showImportsOf :: FilePath *World -> *World
 showImportsOf path world
+    # world = putStrLn (">> Parsing imports of '" +++ path +++ "'...") world
     # (result,world) = importsOf path world
     = case result of
-        Right names
-            # world = putStrLn (">> Dependencies of '" +++ path +++ "'") world
-            = seqSt putStrLn ('Set'.toList names) world
-        Left error
-            # world = putStrLn ("!! Could not determine dependencies of '" +++ path +++ "'") world
-            = putStrLn ("   " +++ error) world
+        Right names -> seqSt putStrLn ('Set'.toList names) world
+        Left error -> putStrLn ("!! " +++ error) world
 
 importsOf :: FilePath *World -> (Either String (Set Name), *World)
 importsOf path world
