@@ -1,7 +1,6 @@
 module Main
 
 import Data.Func
-import StdTuple
 import Data.List
 
 import System.CommandLine
@@ -15,5 +14,4 @@ Start world
     | null args = 'Development.Scrub.Command'.run "help" args world
     # [command:args] = args
     = 'Development.Scrub.Command'.run command args world
-    // = exit 0 world
 
