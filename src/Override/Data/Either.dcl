@@ -4,6 +4,9 @@ import Data.Error
 
 :: Either a b :== MaybeError a b
 
+Left a :== Error a
+Right b :== Ok b
+
 // isLeft :: !(Either a b) -> Bool
 isLeft e :== isError e
 // isRight :: !(Either a b) -> Bool
