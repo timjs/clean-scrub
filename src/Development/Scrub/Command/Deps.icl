@@ -2,7 +2,7 @@ implementation module Development.Scrub.Command.Deps
 
 import Data.Char
 import Data.Bool
-import Override.Data.Either
+import Data.Either
 import Data.Func
 import Data.String
 import Data.Tuple
@@ -22,7 +22,7 @@ import Development.Scrub.Parsers
 
 // Debugging //
 
-derive gPrint MaybeError, Set
+derive gPrint Set
 
 // # Running the command //
 

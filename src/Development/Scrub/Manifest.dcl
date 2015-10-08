@@ -1,6 +1,6 @@
 definition module Development.Scrub.Manifest
 
-from Override.Data.Either import :: Either
+from Data.Either import :: Either
 from Data.Maybe import :: Maybe
 from Data.Map import :: Map
 

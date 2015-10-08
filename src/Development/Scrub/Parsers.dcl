@@ -1,6 +1,6 @@
 definition module Development.Scrub.Parsers
 
-import Override.Data.Either
+import Data.Either
 import Data.Functor
 import Data.String
 

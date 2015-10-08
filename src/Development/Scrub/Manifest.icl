@@ -1,7 +1,7 @@
 implementation module Development.Scrub.Manifest
 
 import Data.Func
-import Override.Data.Either
+import Data.Either
 import Data.Tuple
 
 import qualified Data.Map as Map
@@ -16,8 +16,8 @@ import System.Process
 
 import Development.Scrub.Types
 
-derive JSONDecode Manifest, PackageInfo, DependencieInfo, LibraryInfo, MaybeError
-derive JSONEncode Manifest, PackageInfo, DependencieInfo, LibraryInfo, MaybeError
+derive JSONDecode Manifest, PackageInfo, DependencieInfo, LibraryInfo
+derive JSONEncode Manifest, PackageInfo, DependencieInfo, LibraryInfo
 
 readManifest :: *World -> (Manifest,*World)
 readManifest world

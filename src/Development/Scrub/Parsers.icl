@@ -2,7 +2,7 @@ implementation module Development.Scrub.Parsers
 
 import Data.Bool
 import Data.Char
-import Override.Data.Either
+import Data.Either
 import Data.String
 import qualified Data.List as List
 from Data.List import instance Functor [], instance toString [], instance fromString []

@@ -1,6 +1,7 @@
 definition module Development.Scrub.Types
 
-import Override.Data.Either
+from Data.Either import :: Either
+from Data.Maybe import :: Maybe
 from Data.String import class toString(..)
 
 from Text.JSON import generic JSONDecode, generic JSONEncode, :: JSONNode(..)
