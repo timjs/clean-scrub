@@ -8,6 +8,9 @@ from Data.String import class toString, class fromString
     | Build
     | Rebuild
     | Deps
+    | Info
+    | ResolveModule
+    | ResolvePackage
     //XXX more to come...
 
 instance fromString Command

@@ -1,0 +1,26 @@
+[package]
+name = "scrub"
+version = "0.1.0"
+authors = ["Tim Steenvoorden <tim.steenvoorden@gmail.com>"]
+
+[[dependencies]]
+name = "clean-platform"
+version = "0.100.0"
+path = "../clean-platform"
+
+[[dependencies]]
+name = "clean-generics"
+version = "1.0.0"
+path = "../clean-generics"
+
+[library]
+modules = [ "Development.Scrub.Command.Build"
+          , "Development.Scrub.Command.Deps"
+          , "Development.Scrub.Command.Generate"
+          , "Development.Scrub.Command.Rebuild"
+          ]
+
+#[executables.scrub]
+#name = default: package.name
+#path = default: "src/Main.cl"
+

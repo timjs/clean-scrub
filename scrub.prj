@@ -131,6 +131,34 @@ OtherModules
 			ReuseUniqueNodes:	True
 			Fusion:	False
 	Module
+		Name:	Development.Scrub.Command.ResolveModule
+		Dir:	{Project}/src
+		Compiler
+			NeverMemoryProfile:	False
+			NeverTimeProfile:	False
+			StrictnessAnalysis:	True
+			ListTypes:	StrictExportTypes
+			ListAttributes:	True
+			Warnings:	True
+			Verbose:	True
+			ReadableABC:	False
+			ReuseUniqueNodes:	True
+			Fusion:	False
+	Module
+		Name:	Development.Scrub.Manifest
+		Dir:	{Project}/src
+		Compiler
+			NeverMemoryProfile:	False
+			NeverTimeProfile:	False
+			StrictnessAnalysis:	True
+			ListTypes:	StrictExportTypes
+			ListAttributes:	True
+			Warnings:	True
+			Verbose:	True
+			ReadableABC:	False
+			ReuseUniqueNodes:	True
+			Fusion:	False
+	Module
 		Name:	Development.Scrub.Types
 		Dir:	{Project}/src
 		Compiler
@@ -327,6 +355,20 @@ OtherModules
 			ReuseUniqueNodes:	True
 			Fusion:	False
 	Module
+		Name:	Data.Map
+		Dir:	{Project}/../clean-platform/src/libraries/OS-Independent
+		Compiler
+			NeverMemoryProfile:	False
+			NeverTimeProfile:	False
+			StrictnessAnalysis:	True
+			ListTypes:	StrictExportTypes
+			ListAttributes:	True
+			Warnings:	True
+			Verbose:	True
+			ReadableABC:	False
+			ReuseUniqueNodes:	True
+			Fusion:	False
+	Module
 		Name:	Data.Maybe
 		Dir:	{Project}/../clean-platform/src/libraries/OS-Independent
 		Compiler
@@ -383,6 +425,20 @@ OtherModules
 			ReuseUniqueNodes:	True
 			Fusion:	False
 	Module
+		Name:	Data.Traversable
+		Dir:	{Project}/../clean-platform/src/libraries/OS-Independent
+		Compiler
+			NeverMemoryProfile:	False
+			NeverTimeProfile:	False
+			StrictnessAnalysis:	True
+			ListTypes:	StrictExportTypes
+			ListAttributes:	True
+			Warnings:	True
+			Verbose:	True
+			ReadableABC:	False
+			ReuseUniqueNodes:	True
+			Fusion:	False
+	Module
 		Name:	Data.Tuple
 		Dir:	{Project}/../clean-platform/src/libraries/OS-Independent
 		Compiler
@@ -412,6 +468,20 @@ OtherModules
 			Fusion:	False
 	Module
 		Name:	System.CommandLine
+		Dir:	{Project}/../clean-platform/src/libraries/OS-Independent
+		Compiler
+			NeverMemoryProfile:	False
+			NeverTimeProfile:	False
+			StrictnessAnalysis:	True
+			ListTypes:	StrictExportTypes
+			ListAttributes:	True
+			Warnings:	True
+			Verbose:	True
+			ReadableABC:	False
+			ReuseUniqueNodes:	True
+			Fusion:	False
+	Module
+		Name:	System.Console.Output
 		Dir:	{Project}/../clean-platform/src/libraries/OS-Independent
 		Compiler
 			NeverMemoryProfile:	False
@@ -468,6 +538,34 @@ OtherModules
 			Fusion:	False
 	Module
 		Name:	Text
+		Dir:	{Project}/../clean-platform/src/libraries/OS-Independent
+		Compiler
+			NeverMemoryProfile:	False
+			NeverTimeProfile:	False
+			StrictnessAnalysis:	True
+			ListTypes:	StrictExportTypes
+			ListAttributes:	True
+			Warnings:	True
+			Verbose:	True
+			ReadableABC:	False
+			ReuseUniqueNodes:	True
+			Fusion:	False
+	Module
+		Name:	Text.JSON
+		Dir:	{Project}/../clean-platform/src/libraries/OS-Independent
+		Compiler
+			NeverMemoryProfile:	False
+			NeverTimeProfile:	False
+			StrictnessAnalysis:	True
+			ListTypes:	StrictExportTypes
+			ListAttributes:	True
+			Warnings:	True
+			Verbose:	True
+			ReadableABC:	False
+			ReuseUniqueNodes:	True
+			Fusion:	False
+	Module
+		Name:	Text.PPrint
 		Dir:	{Project}/../clean-platform/src/libraries/OS-Independent
 		Compiler
 			NeverMemoryProfile:	False
@@ -845,7 +943,35 @@ OtherModules
 			ReuseUniqueNodes:	True
 			Fusion:	False
 	Module
+		Name:	StdOverloadedList
+		Dir:	{Application}/lib/StdEnv
+		Compiler
+			NeverMemoryProfile:	False
+			NeverTimeProfile:	False
+			StrictnessAnalysis:	True
+			ListTypes:	StrictExportTypes
+			ListAttributes:	True
+			Warnings:	True
+			Verbose:	True
+			ReadableABC:	False
+			ReuseUniqueNodes:	True
+			Fusion:	False
+	Module
 		Name:	StdReal
+		Dir:	{Application}/lib/StdEnv
+		Compiler
+			NeverMemoryProfile:	False
+			NeverTimeProfile:	False
+			StrictnessAnalysis:	True
+			ListTypes:	StrictExportTypes
+			ListAttributes:	True
+			Warnings:	True
+			Verbose:	True
+			ReadableABC:	False
+			ReuseUniqueNodes:	True
+			Fusion:	False
+	Module
+		Name:	StdStrictLists
 		Dir:	{Application}/lib/StdEnv
 		Compiler
 			NeverMemoryProfile:	False
@@ -902,6 +1028,34 @@ OtherModules
 			Fusion:	False
 	Module
 		Name:	_SystemEnum
+		Dir:	{Application}/lib/StdEnv
+		Compiler
+			NeverMemoryProfile:	False
+			NeverTimeProfile:	False
+			StrictnessAnalysis:	True
+			ListTypes:	StrictExportTypes
+			ListAttributes:	True
+			Warnings:	True
+			Verbose:	True
+			ReadableABC:	False
+			ReuseUniqueNodes:	True
+			Fusion:	False
+	Module
+		Name:	_SystemEnumStrict
+		Dir:	{Application}/lib/StdEnv
+		Compiler
+			NeverMemoryProfile:	False
+			NeverTimeProfile:	False
+			StrictnessAnalysis:	True
+			ListTypes:	StrictExportTypes
+			ListAttributes:	True
+			Warnings:	True
+			Verbose:	True
+			ReadableABC:	False
+			ReuseUniqueNodes:	True
+			Fusion:	False
+	Module
+		Name:	_SystemStrictLists
 		Dir:	{Application}/lib/StdEnv
 		Compiler
 			NeverMemoryProfile:	False
