@@ -4,21 +4,22 @@ import Data.Char
 import Data.Bool
 import Override.Data.Either
 import Data.Func
-import Data.Functor
-import Data.Foldable
 import Data.String
 import Data.Tuple
-
 import qualified Data.List as List
 from Data.List import instance Functor [], instance toString [], instance fromString []
 import qualified Data.Set as Set
 from Data.Set import :: Set
 
-import Text.Parsers.ParsersKernel, Text.Parsers.ParsersDerived
+import Data.Functor
+import Data.Foldable
 
 import Control.Applicative
 import qualified Control.Monad
 
+import Text.Parsers.ParsersKernel, Text.Parsers.ParsersDerived
+
+import System.Console.Output
 import System.File
 import System.FilePath
 
@@ -28,17 +29,19 @@ import Development.Scrub.Types
 
 derive gPrint MaybeError, Set
 
+// # Running the command //
+
 run :: [String] *World -> *World
 run args world
     = seqSt showImportsOf args world
 
 showImportsOf :: FilePath *World -> *World
 showImportsOf path world
-    # world = putStrLn (">> Parsing imports of '" +++ path +++ "'...") world
+    # world = putAct ["Parsing imports of ", quote path] world
     # (result,world) = importsOf path world
     = case result of
         Right names -> seqSt putStrLn ('Set'.toList names) world
-        Left error -> putStrLn ("!! " +++ error) world
+        Left error -> putErr [error] world
 
 importsOf :: FilePath *World -> (Either String (Set Name), *World)
 importsOf path world
@@ -58,7 +61,7 @@ parseOnly :: (Parser Char r r) String -> Either String r
 parseOnly parser input = toEither $ parse parser (fromString input) "parseOnly" "character"
     where
         toEither :: (Result r) -> Either String r
-        toEither (Succ rs) = Right ('List'.head rs) //XXX uses `head`: unsafe?
+        toEither (Succ rs) = Right ('List'.head rs) //XXX uses `head`: unsafe for these parsers?
         toEither (Err a b c) = Left "!! Parse error" //(toString (a,b,c))
 
 // Parser -- Helpers //
