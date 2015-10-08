@@ -1,6 +1,6 @@
 definition module Development.Scrub.Manifest
 
-from Data.Either import :: Either
+from Override.Data.Either import :: Either
 from Data.Maybe import :: Maybe
 from Data.Map import :: Map
 
@@ -20,7 +20,7 @@ MANIFEST_FILENAME :== "Scrub.json" //FIXME change to .toml
 
 :: PackageInfo =
     { name :: Name
-    , version :: String //XXX should be of type Version :== (x,y,z)
+    , version :: Version
     , authors :: [Author]
     }
 :: DependencieInfo =

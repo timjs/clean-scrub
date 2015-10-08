@@ -11,19 +11,14 @@ from Data.List import instance Functor [], instance toString [], instance fromSt
 import qualified Data.Set as Set
 from Data.Set import :: Set
 
-import Data.Functor
 import Data.Foldable
-
-import Control.Applicative
-import qualified Control.Monad
-
-import Text.Parsers.ParsersKernel, Text.Parsers.ParsersDerived
 
 import System.Console.Output
 import System.File
 import System.FilePath
 
 import Development.Scrub.Types
+import Development.Scrub.Parsers
 
 // Debugging //
 
@@ -56,52 +51,6 @@ importsIn :: String -> Either String (Set Name)
 importsIn string = 'Set'.fromList <$> parseOnly imports string
 
 // Parser //
-
-parseOnly :: (Parser Char r r) String -> Either String r
-parseOnly parser input = toEither $ parse parser (fromString input) "parseOnly" "character"
-    where
-        toEither :: (Result r) -> Either String r
-        toEither (Succ rs) = Right ('List'.head rs) //XXX uses `head`: unsafe for these parsers?
-        toEither (Err a b c) = Left "!! Parse error" //(toString (a,b,c))
-
-// Parser -- Helpers //
-
-sepBy1 :: (f a) (f s) -> f [a] | Alternative f
-sepBy1 p s = scan
-    where scan = liftA2 'List'.cons p ((s *> scan) <|> pure [])
-
-// char :: Char -> Parser Char t Char
-char c :== symbol c
-// string :: String -> Parser Char t [Char]
-string s :== token (fromString s)
-// many :: (Parser s t r) -> Parser s t [r]
-many p :== <!*> p
-// some :: (Parser s t r) -> Parser s t [r]
-some p :== <!+> p
-// optional :: (Parser s t r) -> Parser s t ()
-optional p :== <!?> p (\_ -> ()) ()
-
-// Parser -- Spaces //
-
-isHorizontalSpace :: Char -> Bool
-isHorizontalSpace c = c == ' ' || c == '\t'
-
-horizontalSpace :: Parser Char t Char
-horizontalSpace = satisfy isHorizontalSpace
-
-blank :: Parser Char t ()
-blank = some horizontalSpace *> pure () //skipOver horizontalSpace
-
-isEndOfLine :: Char -> Bool
-isEndOfLine c = c == '\n' || c == '\r'
-
-endOfLine :: Parser Char t ()
-endOfLine = (char '\n' *> pure ()) <|> (string "\r\n" *> pure ())
-
-rest :: Parser Char t ()
-rest = skipTo endOfLine *> endOfLine
-
-// Parser - Modules //
 
 isName :: Char -> Bool
 isName c = isAlphaNum c || c == '_' || c == '`' || c == '.'
