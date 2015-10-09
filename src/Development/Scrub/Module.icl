@@ -1,4 +1,4 @@
-implementation module Development.Scrub.Command.Deps
+implementation module Development.Scrub.Module
 
 import Data.Char
 import Data.Bool
@@ -20,15 +20,7 @@ import System.FilePath
 import Development.Scrub.Types
 import Development.Scrub.Parsers
 
-// Debugging //
-
-derive gPrint Set
-
 // # Running the command //
-
-run :: [String] *World -> *World
-run args world
-    = seqSt showImportsOf args world
 
 showImportsOf :: FilePath *World -> *World
 showImportsOf path world
