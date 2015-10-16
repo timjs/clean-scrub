@@ -10,15 +10,13 @@ path = "../clean-platform"
 
 [[dependencies]]
 name = "clean-generics"
-version = "1.0.0"
+version = "2.4.0"
 path = "../clean-generics"
 
-[library]
-modules = [ "Development.Scrub.Command.Build"
-          , "Development.Scrub.Command.Deps"
-          , "Development.Scrub.Command.Generate"
-          , "Development.Scrub.Command.Rebuild"
-          ]
+[[dependencies]]
+name = "clean-stdenv"
+version = "2.4.0"
+path = "../clean-stdenv"
 
 #[executables.scrub]
 #name = default: package.name

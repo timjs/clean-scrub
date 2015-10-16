@@ -16,24 +16,32 @@ import System.Process
 
 import Development.Scrub.Types
 
-derive JSONDecode Manifest, PackageInfo, DependencieInfo, LibraryInfo
-derive JSONEncode Manifest, PackageInfo, DependencieInfo, LibraryInfo
+derive JSONDecode Manifest, BasicInfo, DependencyInfo, LibraryInfo, ExecutableInfo
+derive JSONEncode Manifest, BasicInfo, DependencyInfo, LibraryInfo, ExecutableInfo
 
-readManifest :: *World -> (Manifest,*World)
-readManifest world
-    # world = putAct ["Reading manifest file"] world
-    # (result,world) = readFile MANIFEST_FILENAME world
+//
+// # Manifest files
+//
+
+readManifest :: FilePath *World -> (Manifest,*World)
+readManifest path world
+    # (result,world) = traceAct ["Reading manifest file from", quote path] $
+        readFile (path </> manifestFilename) world
     = case result of
         Left error
-            # world = putErr ["Could not read ", quote MANIFEST_FILENAME, ": ", toString error] world
+            # world = putErr ["Error reading manifest file from", quote path, ":", toString error] world
             = exit 1 world
         Right string
             # json = fromString string
             = case fromJSON json of
                 Nothing
-                    # world = putErr ["Could not parse ", quote MANIFEST_FILENAME] world
+                    # world = putErr ["Error parsing manifest file from", quote path] world
                     = exit 1 world
                 Just manifest = (manifest, world)
+
+readMainManifest :: *World -> (Manifest,*World)
+readMainManifest world
+    = traceAct ["Reading main manifest file"] $ readManifest "." world
 
 showManifest :: Manifest *World -> *World
 showManifest manifest world
@@ -42,11 +50,31 @@ showManifest manifest world
 
 writeManifest :: FilePath Manifest *World -> *World
 writeManifest path manifest world
-    # world = putAct ["Writing manifest file to ", quote path] world
-    # (result,world) = writeFile path (toString $ toJSON manifest) world
+    # (result,world) = traceAct ["Writing manifest file to", quote path] $
+        writeFile path (toString $ toJSON manifest) world
     = case result of
         Left error
-            # world = putErr ["Could not write manifest to ", quote path, ": ", toString error] world
+            # world = putErr ["Could not write manifest to", quote path, ":", toString error] world
             = snd $ exit 1 world
         Right _ = world
+
+//
+// # Packages
+//
+
+createPackage :: DependencyInfo *World -> (Package, *World)
+createPackage info world
+    # path = info.DependencyInfo.path
+    # (manifest,world) = readManifest path world
+    = traceAct ["Creating package info for", quote path] $
+        ({ path = path, manifest = manifest }, world)
+
+//
+// # Dependencies
+//
+//XXX make these recursive for dependencies of dependencies
+
+// readDependencies :: Package *World -> ([Package],*World)
+// readDependencies package world
+//     = mapSt readDependency package.manifest.dependencies world
 

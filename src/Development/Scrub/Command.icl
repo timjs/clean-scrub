@@ -29,8 +29,11 @@ instance toString Command where
 
 run :: String [String] *World -> *World
 
-run "deps" args world
-    = seqSt showImportsOf args world
+run "imports" args world
+    = seqSt showImports args world
+
+run "dependencies" args world
+    = seqSt showDependencies args world
 
 run "generate" args world
     = undef
@@ -45,7 +48,7 @@ run "resolve-module" args world
     = undef
 
 run "info" args world
-    # (manifest,world) = readManifest world
+    # (manifest,world) = readMainManifest world
     = showManifest manifest world
 
 run "help" args world

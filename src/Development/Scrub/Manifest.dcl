@@ -10,25 +10,37 @@ from System.FilePath import :: FilePath
 
 import Development.Scrub.Types
 
-MANIFEST_FILENAME :== "Scrub.json" //FIXME change to .toml
+manifestFilename :== "Scrub.json" //FIXME change to .toml
+
+:: Package = //XXX other name so we dont have to write package.manifest.package.name
+    { path :: FilePath
+    , manifest :: Manifest
+    }
 
 :: Manifest =
-    { package :: PackageInfo
-    , dependencies :: [DependencieInfo] //Map Name (Either VersionConstraint DependencieInfo)
+    { package :: BasicInfo
+    , dependencies :: [DependencyInfo] //Map Name (Either VersionConstraint DependencyInfo)
+    , executables :: Maybe [ExecutableInfo]
     , library :: Maybe LibraryInfo
     }
 
-:: PackageInfo =
+:: BasicInfo =
     { name :: Name
     , version :: Version
     , authors :: [Author]
+    , sources :: Maybe FilePath
     }
-:: DependencieInfo =
+:: DependencyInfo =
     { name :: Name
-    , version :: VersionConstraint
-    , path :: Maybe FilePath
-    , git :: Maybe FilePath
+    , version :: VersionConstraint //XXX how do we check versions?
+    , path :: FilePath
+    //, git :: Maybe FilePath
     //XXX more to come
+    }
+:: ExecutableInfo =
+    { name :: Name
+    , main :: FilePath
+    //XXX more to come?
     }
 :: LibraryInfo =
     { name :: Maybe Name
@@ -39,7 +51,10 @@ MANIFEST_FILENAME :== "Scrub.json" //FIXME change to .toml
 derive JSONDecode Manifest
 derive JSONEncode Manifest
 
-readManifest :: *World -> (Manifest,*World)
+readManifest :: FilePath *World -> (Manifest,*World)
+readMainManifest :: *World -> (Manifest,*World)
 showManifest :: Manifest *World -> *World
 writeManifest :: FilePath Manifest *World -> *World
+
+createPackage :: DependencyInfo *World -> (Package, *World)
 
