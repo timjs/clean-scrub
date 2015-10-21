@@ -51,10 +51,11 @@ manifestFilename :== "Scrub.json" //FIXME change to .toml
 derive JSONDecode Manifest
 derive JSONEncode Manifest
 
-readManifest :: FilePath *World -> (Manifest,*World)
-readMainManifest :: *World -> (Manifest,*World)
+readManifest :: FilePath *World -> *Return Manifest
+readMainManifest :: *World -> *Return Manifest
 showManifest :: Manifest *World -> *World
-writeManifest :: FilePath Manifest *World -> *World
+showMainManifest :: *World -> *World
+writeManifest :: FilePath Manifest *World -> *Return ()
 
-createPackage :: DependencyInfo *World -> (Package, *World)
+createPackage :: DependencyInfo *World -> *Return Package
 

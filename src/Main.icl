@@ -2,16 +2,25 @@ module Main
 
 import Data.Func
 import Data.List
+import Data.Tuple
 
 import System.CommandLine
+import System.Console.Output
 import System.Process
 
-import qualified Development.Scrub.Command
+import Development.Scrub.Command
+import Development.Scrub.Types
 
 Start :: *World -> *World
 Start world
-    # ([progname:args],world) = getCommandLine world
-    | null args = 'Development.Scrub.Command'.run "help" args world
-    # [command:args] = args
-    = 'Development.Scrub.Command'.run command args world
+    # ([_:args],world) = getCommandLine world
+    # (command,args) = null args ? ("help", []) $ (head args, tail args)
+    = run command args world
+    // # (result,world) = run command args world
+    // = case result of
+    //     Ok _
+    //         = snd $ exit 0 world
+    //     Error e
+    //         # world = putErr [toString e] world
+    //         = snd $ exit 1 world
 

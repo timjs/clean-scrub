@@ -1,31 +1,15 @@
 implementation module Development.Scrub.Command
 
 import Data.Func
+import Data.Result
 import Data.String
+import Data.Tuple
 
 import System.File
 import System.Console.Output
 
 import Development.Scrub.Manifest
 import Development.Scrub.Module
-
-instance fromString Command where
-    fromString "help" = Help
-    fromString "deps" = Deps
-    fromString "generate" = Generate
-    fromString "build" = Build
-    fromString "rebuild" = Rebuild
-    fromString "resolve-module" = ResolveModule
-    fromString "info" = Info
-
-instance toString Command where
-    toString Help = "help"
-    toString Deps = "deps"
-    toString Generate = "generate"
-    toString Build = "build"
-    toString Rebuild = "rebuild"
-    toString ResolveModule = "resolve-module"
-    toString Info = "info"
 
 run :: String [String] *World -> *World
 
@@ -48,8 +32,7 @@ run "resolve-module" args world
     = undef
 
 run "info" args world
-    # (manifest,world) = readMainManifest world
-    = showManifest manifest world
+    = showMainManifest world
 
 run "help" args world
     = putStrLn helpMessage world
@@ -57,5 +40,5 @@ run "help" args world
 run command args world
     = putErr [quote command, " is not a scrub command, see 'scrub help'"] world
 
-helpMessage :== "This is Scrub v0.0.1 by Tim Steenvoorden"
+helpMessage :== "This is Scrub v0.0.7 by Tim Steenvoorden"
 

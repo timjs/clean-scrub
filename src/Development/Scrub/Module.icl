@@ -2,13 +2,15 @@ implementation module Development.Scrub.Module
 
 import Data.Char
 import Data.Bool
-import Data.Either
 import Data.Func
 import Data.Maybe
+import Data.Result
 import Data.String
 import Data.Tuple
 import Data.Eq
 import Data.Ord
+import Data.Foldable
+import Data.Traversable
 
 import qualified Data.List as List
 from Data.List import instance Functor [], instance toString [], instance fromString []
@@ -16,8 +18,6 @@ import qualified Data.Set as Set
 import Data.Set.Operators
 import qualified Data.Map as Map
 from Data.Map import :: Map, instance Semigroup Map, instance Monoid Map
-
-import Data.Foldable
 
 import System.Console.Output
 import System.File
@@ -35,23 +35,22 @@ import Development.Scrub.Parsers
 
 showImports :: FilePath *World -> *World
 showImports path world
+    # world = putAct ["Calculating imports of", quote path] world
     # (result,world) = calcImports path world
-    = case result of
-        Right names -> seqSt putStrLn ('Set'.toList names) world
-        Left error -> putErr ["Error calculating imports:", error] world
+    | isError result = putErr [toString $ fromError result] world
+    # names = fromOk result
+    = seqSt putStrLn ('Set'.toList names) world
 
-calcImports :: FilePath *World -> (Either String (Set Name), *World)
+calcImports :: FilePath *World -> *Return (Set Name)
 calcImports path world
-    # (result,world) = traceAct ["Reading contents of", quote path] $
-        readFile path world
-    = (convert result >>= parseImports, world) //FIXME
-    where
-        convert :: (Either FileError a) -> Either String a
-        convert (Left e) = Left (toString e)
-        convert (Right a) = Right a
+    # world = logInf ["Reading contents of", quote path] world
+    # (result,world) = readFile path world
+    | isError result = (rethrow` result, world)
+    # string = fromOk result
+    = (parseImports string, world)
 
-parseImports :: String -> Either String (Set Name)
-parseImports string = 'Set'.fromList <$> parseOnly imports string
+parseImports :: String -> Result Error (Set Name)
+parseImports string = mapBoth ParseError 'Set'.fromList $ parseOnly imports string
 
 //
 // ## Imports parser
@@ -82,41 +81,42 @@ imports = concat <$> many (importLine <|> fromLine <|> otherLine)
 // # Calculating dependencies
 //
 
+// showDependencies path = readMainManifest >>= createDatabase >>= calcDependencies path >>= showDatabase
 showDependencies :: FilePath *World -> *World
 showDependencies path world
-    # (manifest,world) = readMainManifest world
-    # (database,world) = createDatabase manifest world
+    # world = logAct ["Calculating dependecies of", quote path] world
+    # (result,world) = readMainManifest world
+    | isError result = world
+    # manifest = fromOk result
+    # (result,world) = createDatabase manifest world
+    | isError result = world
+    # database = fromOk result
     # (result,world) = calcDependencies path database world
-    = case result of
-        Right names -> seqSt putStrLn ('Set'.toList names) world //FIXME DRY
-        Left error -> putErr ["Error calculating dependencies:", error] world
+    | isError result = putErr [toString $ fromError result] world
+    # names = fromOk result
+    = seqSt putStrLn ('Set'.toList names) world
 
-//TODO optimise by collecting in DependencyTree
-calcDependencies :: FilePath Database *World -> (Either String (Set Name), *World)
+//TODO optimise by collecting in DependencyTree ?
+calcDependencies :: FilePath Database *World -> *Return (Set Name)
 calcDependencies path database world
-    # (result,world) = traceAct ["Calculating dependencies of", quote path] $
-        calcImports path world
-    = case result of
-        Right todo -> go todo 'Set'.empty world
-        error -> (error, world)
+    # (result,world) = calcImports path world
+    | isError result = (result, world)
+    # todo = fromOk result
+    = go todo 'Set'.empty world
     where
-        // go :: (Set a) (Set a) *World -> (Either String (Set Name), *World)
+        // go :: (Set a) -> (Set a) *World -> *Return (Set Name)
         go todo done world
-            | 'Set'.null todo = (pure done, world)
+            | 'Set'.null todo = (Ok done, world)
             # (current,rest) = 'Set'.deleteFindMin todo
-            # pathE = lookupDatabase current database
-            = case pathE of
-                Right path
-                    # (importsE,world) = calcImports path world
-                    # todoE = importsE >>= \imports ->
-                        pure $ rest \/ imports \\\ done
-                    # done = 'Set'.insert current done
-                    = case todoE of
-                        Right todo = go todo done world
-                        error = (error, world)
-                Left e = (Left e, world)
-
-throw e :== Left e
+            # result = lookupModule current database
+            | isError result = (rethrow result, world)
+            # path = fromOk result
+            # (result,world) = calcImports path world
+            | isError result = (result, world)
+            # imports = fromOk result
+            # todo = rest \/ imports \\\ done
+            # done = 'Set'.insert current done
+            = go todo done world
 
 //
 // # Module database
@@ -129,40 +129,45 @@ moduleSeparator :== '.'
 replace :: Char Char -> String -> String
 replace x y = toString o 'List'.map (\e -> e == x ? y $ e) o fromString
 
-createDatabase :: Manifest *World -> (Database, *World)
+createDatabase :: Manifest *World -> *Return Database
 createDatabase manifest world
-    # (packages,world) = mapSt createPackage manifest.dependencies world
+    # world = logInf ["Creating main module database"] world
+    # (results,world) = mapSt createPackage manifest.dependencies world
+    # result = sequence results
+    | isError result = (rethrow result, world)
+    # packages = fromOk result
     # (result,world) = localModules manifest world
-    = case result of
-        Left error
-            # world = putErr ["Error creating database:", error] world
-            = exit 1 world
-        Right database
-            = traceAct ["Creating main module database"] $
-                ('List'.foldr extendDatabase database packages, world)
+    | isError result = (result, world)
+    // putErr ["Error creating database:", error] world
+    # database = fromOk result
+    = (Ok $ 'List'.foldr extendDatabase database packages, world)
+
+// createDatabase manifest world
+//     tell [Info "Creating main module database"]
+//     packages <- sequence $ traverse createPackage manifest.dependencies
+//     database <- localModules manifest
+//     return $ 'List'.foldr extendDatabase database packages
 
 extendDatabase :: Package Database -> Database
 extendDatabase package database
-    = traceAct ["Extending module database with", quote package.manifest.package.BasicInfo.name] $
-        'List'.foldr (uncurry 'Map'.insert) database $ 'List'.zip2 moduleNames definitionPaths
+    // traceAct ["Extending module database with", quote package.manifest.package.BasicInfo.name] $
+    = 'List'.foldr (uncurry 'Map'.insert) database $ 'List'.zip2 moduleNames definitionPaths
     where
         moduleNames = maybe [] (\info -> info.modules) package.manifest.library
         definitionPaths = 'List'.map transform moduleNames
         transform name = package.Package.path </> maybe "" id package.manifest.package.sources </> replace moduleSeparator pathSeparator name <.> definitionExtension
         //XXX someday: transform name = scrubPackageRoot </> package.name </> package.version </> package.sources </> replace moduleSeparator pathSeparator name <.> definitionExtension
 
-localModules :: Manifest *World -> (Either String Database, *World)
+localModules :: Manifest *World -> *Return Database
 localModules manifest world
+    # world = logInf ["Searching for local modules"] world
+    # world = logRes ["Source directory"] sourceDir world
     # (result,world) = findFiles definitionPredicate sourceDir world
-    = case result of
-        Left error = (throw $ "Some OSError...", world)
-        Right definitionPaths
-            # moduleNames = traceRes ["Found local modules"] $
-                'List'.map transform definitionPaths
-            = traceAct ["Searching for local modules"] $
-                (pure $ 'Map'.fromList $ //traceRes ["Local modules"] $
-                    'List'.zip2 moduleNames definitionPaths
-                , world)
+    | isError result = (rethrow` result, world)
+    # definitionPaths = fromOk result
+    # moduleNames = 'List'.map transform definitionPaths
+    # world = logRes ["Found local modules"] moduleNames world
+    = (Ok $ 'Map'.fromList $ 'List'.zip2 moduleNames definitionPaths, world)
     where
         sourceDir = maybe "./src" id manifest.package.sources
         transform = replace pathSeparator moduleSeparator o makeRelative sourceDir o dropExtension
@@ -180,9 +185,9 @@ localModules manifest world
 // ## Resolving module definitionPaths
 // 
 
-lookupDatabase :: Name Database -> Either String FilePath
-lookupDatabase module database
+lookupModule :: Name Database -> Result Error FilePath
+lookupModule module database
     = case 'Map'.lookup module database of
-        Nothing -> throw $ "Could not find module " +++ quote module +++ " in packages"
-        Just path -> pure path
+        Nothing -> Error $ LookupError $ "Could not find module " +++ quote module +++ " in packages"
+        Just path -> Ok path
 

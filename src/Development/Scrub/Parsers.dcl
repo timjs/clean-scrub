@@ -1,12 +1,17 @@
 definition module Development.Scrub.Parsers
 
 import Data.Either
-import Data.Functor
 import Data.String
 
+import Data.Eq
+import Data.Functor
 from Control.Applicative import class Applicative(..), class Alternative(..), *>, <*
 
-import Text.Parsers.Parsers
+from Text.Parsers.Parsers import :: Parser,
+    symbol, token, <!*>, <!+>, <!?>, number, satisfy,
+    instance Functor Parser, instance Applicative Parser, instance Alternative Parser
+
+import Development.Scrub.Types
 
 // Parser -- Run //
 

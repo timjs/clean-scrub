@@ -23,51 +23,55 @@ derive JSONEncode Manifest, BasicInfo, DependencyInfo, LibraryInfo, ExecutableIn
 // # Manifest files
 //
 
-readManifest :: FilePath *World -> (Manifest,*World)
+readManifest :: FilePath *World -> *Return Manifest
 readManifest path world
-    # (result,world) = traceAct ["Reading manifest file from", quote path] $
-        readFile (path </> manifestFilename) world
-    = case result of
-        Left error
-            # world = putErr ["Error reading manifest file from", quote path, ":", toString error] world
-            = exit 1 world
-        Right string
-            # json = fromString string
-            = case fromJSON json of
-                Nothing
-                    # world = putErr ["Error parsing manifest file from", quote path] world
-                    = exit 1 world
-                Just manifest = (manifest, world)
+    # world = logInf ["Reading manifest file from", quote path] world
+    # (result`,world) = readFile (path </> manifestFilename) world
+    // putErr ["Error reading manifest file from", quote path, ":", toString error] world
+    | isError result` = (rethrow` result`, world)
+    # string = fromOk result`
+    # maybe = fromJSON $ fromString string
+    | isNothing maybe = (throw $ ParseError "Could not parse manifest file", world)
+    # manifest = fromJust maybe
+    = (Ok manifest, world)
 
-readMainManifest :: *World -> (Manifest,*World)
+readMainManifest :: *World -> *Return Manifest
 readMainManifest world
-    = traceAct ["Reading main manifest file"] $ readManifest "." world
+    # world = logInf ["Reading main manifest file"] world
+    = readManifest "." world
 
 showManifest :: Manifest *World -> *World
 showManifest manifest world
-    # world = putInf ["Current manifest:"] world
-    = putStrLn (toString $ toJSON manifest) world
+    # world = putAct ["Package information for", manifest.package.BasicInfo.name] world
+    = putStrLn (jsonPrettyPrint $ toJSON manifest) world
 
-writeManifest :: FilePath Manifest *World -> *World
+showMainManifest :: *World -> *World
+showMainManifest world
+    # (result,world) = readMainManifest world
+    | isError result = world
+    # manifest = fromOk result
+    = showManifest manifest world
+
+writeManifest :: FilePath Manifest *World -> *Return ()
 writeManifest path manifest world
-    # (result,world) = traceAct ["Writing manifest file to", quote path] $
-        writeFile path (toString $ toJSON manifest) world
-    = case result of
-        Left error
-            # world = putErr ["Could not write manifest to", quote path, ":", toString error] world
-            = snd $ exit 1 world
-        Right _ = world
+    # world = logInf ["Writing manifest file to", quote path] world
+    # (result`,world) = writeFile path (toString $ toJSON manifest) world
+    // putErr ["Could not write manifest to", quote path, ":", toString error] world
+    | isError result` = (rethrow` result`, world)//FIXME ugly
+    = (Ok (), world)
 
 //
 // # Packages
 //
 
-createPackage :: DependencyInfo *World -> (Package, *World)
+createPackage :: DependencyInfo *World -> *Return Package
 createPackage info world
     # path = info.DependencyInfo.path
-    # (manifest,world) = readManifest path world
-    = traceAct ["Creating package info for", quote path] $
-        ({ path = path, manifest = manifest }, world)
+    # (result,world) = readManifest path world
+    | isError result = (rethrow result, world)
+    # manifest = fromOk result
+    # world = logInf ["Creating package info for", quote path] world
+    = (Ok { path = path, manifest = manifest }, world)
 
 //
 // # Dependencies

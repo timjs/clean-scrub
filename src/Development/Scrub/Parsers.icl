@@ -15,14 +15,16 @@ from Control.Applicative import class Applicative(..), class Alternative(..), *>
 
 import Text.Parsers.Parsers
 
+from Development.Scrub.Types import :: Error(..), :: FileError, :: OSError, :: OSErrorMessage, :: OSErrorCode
+
 // Parser -- Run //
 
 parseOnly :: (Parser Char r r) String -> Either String r
 parseOnly parser input = toEither $ parse parser (fromString input) "parseOnly" "character"
     where
         toEither :: (Result r) -> Either String r
-        toEither (Succ rs) = Right ('List'.head rs) //XXX uses `head`: unsafe for these parsers?
-        toEither (Err a b c) = Left "!! Parse error" //(toString (a,b,c))
+        toEither (Succ rs) = Right ('List'.head rs) //XXX uses `head`, but because these are non-deterministic parsers it is ok?
+        toEither (Err a b c) = Left "Parser combinators failed" //(toString (a,b,c))
 
 // Parser -- Helpers //
 
