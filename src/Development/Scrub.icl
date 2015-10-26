@@ -135,6 +135,75 @@ showPackage package world
     # world = putAct ["Package information for", package.Package.name] world
     = putStrLn (jsonPrettyPrint $ toJSON package) world
 
+/// ### Module Imports
+
+showModuleImports :: FilePath *World -> *World
+showModuleImports path world
+    # world = putAct ["Calculating imports of", quote path] world
+    # (result,world) = calculateModuleImports path world
+    | isError result = putErr [toString $ fromError result] world
+    # imports = fromOk result
+    = seqSt putStrLn ('Set'.toList imports) world
+
+calculateModuleImports :: FilePath *World -> *Return (Set Name)
+calculateModuleImports path world
+    # world = logInf ["Reading contents of", quote path] world
+    # (result,world) = readFile path world
+    | isError result = (rethrow FileError result, world)
+    # string = fromOk result
+    = (parseModuleImports string, world)
+
+parseModuleImports :: String -> Result Error (Set Name)
+parseModuleImports string = mapBoth ParseError 'Set'.fromList $ parseOnly imports string
+
+/*
+/// ### Module Dependencies
+
+showModuleDependencies :: FilePath Package *World -> *World
+showModuleDependencies path package
+    # world = putAct ["Calculating dependecies of", quote path] world
+    = seqSt putStrLn ('Set'.toList $ calculateModuleDependencies path) world
+    
+calculateModuleDependencies :: FilePath Package *World -> *Return (Set Name)
+calculateModuleDependencies path package world
+    # (result,world) = calculateModuleImports path world
+    | isError result = (result, world)
+    # todo = fromOk result
+    = go todo 'Set'.empty world
+    where
+        // go :: (Set a) (Set a) *World -> *Return (Set Name)
+        go todo done world
+            | 'Set'.null todo = (Ok done, world)
+            # (current,rest) = 'Set'.deleteFindMin todo
+            # result = lookupModule current dictionary
+            | isError result = (rethrow result, world)
+            # path = fromOk result
+            # (result,world) = calculateModuleImports path world
+            | isError result = (result, world)
+            # imports = fromOk result
+            # todo = rest \/ imports \\\ done
+            # done = 'Set'.insert current done
+            = go todo done world
+
+/// ### Module Database
+
+createModuleDictionary :: Package *World -> *Return Dictionary
+createMainDatabase package world
+    # world = logInf ["Creating module dictionary"] world
+    # (results,world) = mapSt addPackageDependency package.dependencies world
+    # result = sequence results
+    | isError result = (rethrow result, world)
+    # dependencies = fromOk result
+    # others = 'List'.map (\p -> p.dictionary) dependencies
+    # (result,world) = localModules manifest world
+    | isError result = (result, world)
+    // putErr ["Error creating dictionary:", error] world
+    # locals = fromOk result
+    = (Ok $ 'List'.foldr 'Map'.union locals others, world)
+
+addPackageDependency :: DependencyInfo *World -> *Result Dictionary
+*/
+
 /// ## Helpers
 
 findLocalModules :: FilePath *World -> *Return (Map Name FilePath)
@@ -149,6 +218,29 @@ findLocalModules sourceDir world
     where
         translate = replace pathSeparator moduleSeparator o makeRelative sourceDir o dropExtension
         definitionPredicate info = takeExtension info.FileInformation.path == definitionExtension
+
+/// ### Import parser
+
+isName :: Char -> Bool
+isName c = isAlphaNum c || c == '_' || c == '`' || c == '.'
+
+name :: Parser Char t Name
+name = toString <$> some (satisfy isName)
+
+names :: Parser Char t [Name]
+names = sepBy1 name (char ',' *> blank)
+
+importLine :: Parser Char t [Name]
+importLine = string "import" *> blank *> optional (string "qualified" *> blank) *> names <* rest
+
+fromLine :: Parser Char t [Name]
+fromLine = 'List'.singleton <$> (string "from" *> blank *> name <* rest)
+
+otherLine :: Parser Char t [Name]
+otherLine = rest *> pure []
+
+imports :: Parser Char t [Name]
+imports = concat <$> many (importLine <|> fromLine <|> otherLine)
 
 ////////////////////////////////////////////////////////////////////////////////
 /// # Manifest
@@ -207,107 +299,9 @@ writeManifest path manifest world
 replace :: Char Char -> String -> String
 replace x y = toString o 'List'.map (\e -> e == x ? y $ e) o fromString
 
-/*
-////////////////////////////////////////////////////////////////////////////////
-/// # Modules
-////////////////////////////////////////////////////////////////////////////////
-
-createModule :: FilePath *World -> *Return Module
-createModule path world
-    # imports = calcImports path world
-    # dictionary = ...
-    # dependecies = calcDependencies path dictionary world
-    = (Ok
-        { name = ...
-        , path = path
-        , imports = imports
-        , dependecies = dependecies
-        }, world)
-
-showImports :: Module *World -> *World
-showImports module
-    # world = putAct ["Calculating imports of", quote path] world
-    = seqSt putStrLn ('Set'.toList module.imports) world
-
-showDependencies :: Module *World -> *World
-showDependencies module
-    # world = logAct ["Calculating dependecies of", quote path] world
-    = seqSt putStrLn ('Set'.toList module.dependecies) world
-    
-/// ## Helpers
-
-calcImports :: FilePath *World -> *Return (Set Name)
-calcImports path world
-    # world = logInf ["Reading contents of", quote path] world
-    # (result,world) = readFile path world
-    | isError result = (rethrow SystemError result, world)
-    # string = fromOk result
-    = (parseImports string, world)
-
-parseImports :: String -> Result Error (Set Name)
-parseImports string = mapBoth ParseError 'Set'.fromList $ parseOnly imports string
-
-calcDependencies :: FilePath Dictionary *World -> *Return (Set Name)
-calcDependencies path dictionary world
-    # (result,world) = calcImports path world
-    | isError result = (result, world)
-    # todo = fromOk result
-    = go todo 'Set'.empty world
-    where
-        // go :: (Set a) (Set a) *World -> *Return (Set Name)
-        go todo done world
-            | 'Set'.null todo = (Ok done, world)
-            # (current,rest) = 'Set'.deleteFindMin todo
-            # result = lookupModule current dictionary
-            | isError result = (rethrow result, world)
-            # path = fromOk result
-            # (result,world) = calcImports path world
-            | isError result = (result, world)
-            # imports = fromOk result
-            # todo = rest \/ imports \\\ done
-            # done = 'Set'.insert current done
-            = go todo done world
-
-/// ## Import parser
-
-isName :: Char -> Bool
-isName c = isAlphaNum c || c == '_' || c == '`' || c == '.'
-
-name :: Parser Char t Name
-name = toString <$> some (satisfy isName)
-
-names :: Parser Char t [Name]
-names = sepBy1 name (char ',' *> blank)
-
-importLine :: Parser Char t [Name]
-importLine = string "import" *> blank *> optional (string "qualified" *> blank) *> names <* rest
-
-fromLine :: Parser Char t [Name]
-fromLine = 'List'.singleton <$> (string "from" *> blank *> name <* rest)
-
-otherLine :: Parser Char t [Name]
-otherLine = rest *> pure []
-
-imports :: Parser Char t [Name]
-imports = concat <$> many (importLine <|> fromLine <|> otherLine)
-
 ////////////////////////////////////////////////////////////////////////////////
 /// # Module dictionary
 ////////////////////////////////////////////////////////////////////////////////
-
-createMainDatabase :: Manifest *World -> *Return Dictionary
-createMainDatabase manifest world
-    # world = logInf ["Creating main module dictionary"] world
-    # (results,world) = mapSt addDependency manifest.dependencies world
-    # result = sequence results
-    | isError result = (rethrow result, world)
-    # packages = fromOk result
-    # others = 'List'.map (\p -> p.dictionary) packages
-    # (result,world) = localModules manifest world
-    | isError result = (result, world)
-    // putErr ["Error creating dictionary:", error] world
-    # locals = fromOk result
-    = (Ok $ 'List'.foldr 'Map'.union locals others, world)
 
 //extendDatabase :: Package Dictionary -> Dictionary
 //extendDatabase package dictionary
@@ -329,10 +323,9 @@ createMainDatabase manifest world
 
 /// ## Resolving module definitionPaths
 
-lookupModule :: Name Dictionary -> Result Error FilePath
-lookupModule module dictionary
-    = case 'Map'.lookup module dictionary of
-        Nothing -> throw $ LookupError ("Could not find module " +++ quote module +++ " in packages")
-        Just path -> Ok path
-*/
+// lookupModule :: Name Dictionary -> Result Error FilePath
+// lookupModule module dictionary
+//     = case 'Map'.lookup module dictionary of
+//         Nothing -> throw $ LookupError ("Could not find module " +++ quote module +++ " in packages")
+//         Just path -> Ok path
 

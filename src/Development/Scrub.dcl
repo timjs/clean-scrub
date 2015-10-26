@@ -101,7 +101,7 @@ logInf ms w   :== putInf ms w
     , authors :: [Author]
     , path :: FilePath
     , sourceDirs :: [FilePath]
-    , locals :: Map Name FilePath //XXX
+    , locals :: Map Name FilePath //XXX Set Name ???
     , exports :: Map Name FilePath //XXX
     }
 
@@ -113,6 +113,16 @@ createPackageFromDependency :: DependencyInfo *World -> *Return Package
 showMainPackage :: *World -> *World
 
 showPackage :: Package *World -> *World
+
+showModuleImports :: FilePath *World -> *World
+calculateModuleImports :: FilePath *World -> *Return (Set Name)
+parseModuleImports :: String -> Result Error (Set Name)
+
+// showModuleDependencies :: FilePath *World -> *World
+// calculateModuleDependencies :: FilePath Dictionary *World -> *Return (Set Name)
+
+// createModuleDictionary :: Package *World -> *Result Dictionary
+// addPackageDependency :: DependencyInfo *World -> *Result Dictionary
 
 ////////////////////////////////////////////////////////////////////////////////
 /// # Manifest
@@ -159,27 +169,15 @@ showMainManifest :: *World -> *World
 showManifest :: Manifest *World -> *World
 writeManifest :: FilePath Manifest *World -> *Return ()
 
-/*
 ////////////////////////////////////////////////////////////////////////////////
 /// # Modules
 ////////////////////////////////////////////////////////////////////////////////
 
-:: Module =
-    { name :: Name
-    , path :: FilePath
-    , imports :: Set Name
-    , dependencies :: Set Name
-    }
+// :: Module =
+//     { name :: Name
+//     , path :: FilePath
+//     , imports :: Set Name
+//     , dependencies :: Set Name
+//     }
 
-createModule :: FilePath *World -> *Return Module
-showDependencies :: Module *World -> *World
-showImports :: Module *World -> *World
-
-/// ## Helpers
-
-calcImports :: FilePath *World -> *Return (Set Name)
-parseImports :: String -> Result Error (Set Name)
-
-calcDependencies :: FilePath Dictionary *World -> *Return (Set Name)
-
-*/
+// createModule :: FilePath *World -> *Return Module

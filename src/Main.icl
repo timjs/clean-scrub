@@ -21,8 +21,8 @@ import Development.Scrub
 
 run :: !String [String] *World -> *World
 
-// run "imports" args world
-//     = seqSt showImports args world
+run "imports" args world
+    = seqSt showModuleImports args world
 
 // run "dependencies" args world
 //     = seqSt showDependencies args world
