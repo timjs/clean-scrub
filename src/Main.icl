@@ -2,14 +2,62 @@ module Main
 
 import Data.Func
 import Data.List
+import Data.Result
+import Data.String
 import Data.Tuple
+
+import Data.Traversable
 
 import System.CommandLine
 import System.Console.Output
+import System.File
 import System.Process
 
-import Development.Scrub.Command
-import Development.Scrub.Types
+import Development.Scrub
+
+////////////////////////////////////////////////////////////////////////////////
+/// # Command line interface
+////////////////////////////////////////////////////////////////////////////////
+
+run :: !String [String] *World -> *World
+
+// run "imports" args world
+//     = seqSt showImports args world
+
+// run "dependencies" args world
+//     = seqSt showDependencies args world
+
+run "generate" args world
+    = undef
+
+run "build" args world
+    = undef
+
+run "rebuild" args world
+    = undef
+
+run "resolve-module" args world
+    = undef
+
+run "info" args world
+    | null args = showMainPackage world
+    # (results,world) = mapSt createPackage args world
+    # result = sequence results
+    | isError result = putErr [toString $ fromError result] world
+    # packages = fromOk result
+    = seqSt showPackage packages world
+
+run "help" args world
+    = putStrLn helpMessage world
+
+run command args world
+    = putErr [quote command, " is not a scrub command, see 'scrub help'"] world
+
+helpMessage :== "This is Scrub v0.0.7 by Tim Steenvoorden"
+
+////////////////////////////////////////////////////////////////////////////////
+/// # Start
+////////////////////////////////////////////////////////////////////////////////
 
 Start :: *World -> *World
 Start world
@@ -23,4 +71,3 @@ Start world
     //     Error e
     //         # world = putErr [toString e] world
     //         = snd $ exit 1 world
-

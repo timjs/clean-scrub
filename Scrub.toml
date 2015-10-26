@@ -1,4 +1,4 @@
-[package]
+[info]
 name = "scrub"
 version = "0.1.0"
 authors = ["Tim Steenvoorden <tim.steenvoorden@gmail.com>"]

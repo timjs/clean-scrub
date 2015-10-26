@@ -1,4 +1,4 @@
-definition module Development.Scrub.Parsers
+definition module Text.Attoparsec
 
 import Data.Either
 import Data.String
@@ -7,11 +7,12 @@ import Data.Eq
 import Data.Functor
 from Control.Applicative import class Applicative(..), class Alternative(..), *>, <*
 
+from System.File import :: FileError
+from System.OSError import :: OSError, :: OSErrorCode, :: OSErrorMessage
+
 from Text.Parsers.Parsers import :: Parser,
     symbol, token, <!*>, <!+>, <!?>, number, satisfy,
     instance Functor Parser, instance Applicative Parser, instance Alternative Parser
-
-import Development.Scrub.Types
 
 // Parser -- Run //
 

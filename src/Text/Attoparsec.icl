@@ -1,4 +1,4 @@
-implementation module Development.Scrub.Parsers
+implementation module Text.Attoparsec
 
 import Data.Bool
 import Data.Char
@@ -13,9 +13,10 @@ import Data.Functor
 
 from Control.Applicative import class Applicative(..), class Alternative(..), *>, <*, liftA2
 
-import Text.Parsers.Parsers
+from System.File import :: FileError
+from System.OSError import :: OSError, :: OSErrorCode, :: OSErrorMessage
 
-from Development.Scrub.Types import :: Error(..), :: FileError, :: OSError, :: OSErrorMessage, :: OSErrorCode
+import Text.Parsers.Parsers
 
 // Parser -- Run //
 

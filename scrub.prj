@@ -7,8 +7,8 @@ Global
 		CheckStacks:	False
 		CheckIndexes:	True
 	Application
-		HeapSize:	2097152
-		StackSize:	512000
+		HeapSize:	20971520
+		StackSize:	5120000
 		ExtraMemory:	8192
 		IntialHeapSize:	204800
 		HeapSizeMultiplier:	4096
@@ -62,7 +62,7 @@ MainModule
 		Fusion:	False
 OtherModules
 	Module
-		Name:	Development.Scrub.Command
+		Name:	Development.Scrub
 		Dir:	{Project}/src
 		Compiler
 			NeverMemoryProfile:	False
@@ -76,49 +76,7 @@ OtherModules
 			ReuseUniqueNodes:	True
 			Fusion:	False
 	Module
-		Name:	Development.Scrub.Manifest
-		Dir:	{Project}/src
-		Compiler
-			NeverMemoryProfile:	False
-			NeverTimeProfile:	False
-			StrictnessAnalysis:	True
-			ListTypes:	StrictExportTypes
-			ListAttributes:	True
-			Warnings:	True
-			Verbose:	True
-			ReadableABC:	False
-			ReuseUniqueNodes:	True
-			Fusion:	False
-	Module
-		Name:	Development.Scrub.Module
-		Dir:	{Project}/src
-		Compiler
-			NeverMemoryProfile:	False
-			NeverTimeProfile:	False
-			StrictnessAnalysis:	True
-			ListTypes:	StrictExportTypes
-			ListAttributes:	True
-			Warnings:	True
-			Verbose:	True
-			ReadableABC:	False
-			ReuseUniqueNodes:	True
-			Fusion:	False
-	Module
-		Name:	Development.Scrub.Parsers
-		Dir:	{Project}/src
-		Compiler
-			NeverMemoryProfile:	False
-			NeverTimeProfile:	False
-			StrictnessAnalysis:	True
-			ListTypes:	StrictExportTypes
-			ListAttributes:	True
-			Warnings:	True
-			Verbose:	True
-			ReadableABC:	False
-			ReuseUniqueNodes:	True
-			Fusion:	False
-	Module
-		Name:	Development.Scrub.Types
+		Name:	Text.Attoparsec
 		Dir:	{Project}/src
 		Compiler
 			NeverMemoryProfile:	False
