@@ -29,6 +29,16 @@ run :: !String [String] *World -> *World
 run "imports" args world
     = seqSt showModuleImports args world
 
+run "modules" args world
+    = showMainModuleDictionary world
+    //TODO when implemented package registry
+    // | null args = showMainModuleDictionary world
+    // # (results,world) = mapSt createPackage args world
+    // # result = sequence results
+    // | isError result = putErr [toString $ fromError result] world
+    // # packages = fromOk result
+    // = seqSt showModuleDictionary packages world
+
 // run "dependencies" args world
 //     = seqSt showDependencies args world
 

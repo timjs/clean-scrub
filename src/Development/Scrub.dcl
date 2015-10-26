@@ -8,6 +8,7 @@ from Data.Set import :: Set
 from Data.String import class toString(..)
 
 from Text.JSON import generic JSONDecode, generic JSONEncode, :: JSONNode
+from Text.JSON import generic JSONDecode, generic JSONEncode, :: JSONNode
 
 from System.File import :: FileError
 from System.FilePath import :: FilePath, </>, combine
@@ -42,6 +43,8 @@ moduleSeparator :== '.'
 
 :: VersionConstraint :== String
 
+:: Dictionary :== Map Name FilePath
+
 derive JSONDecode Version // instance in implementation
 derive JSONEncode Version // instance in implementation
 
@@ -73,11 +76,11 @@ parseVersion :: String -> Either String Version
 :: Error
     = SystemError OSError
     | FileError FilePath FileError
+    | PackageError Name [Name]
+
     | LookupError String
     | ParseError String
     | NinjaError String
-
-    | PackageError Name [Name]
     // | ...
 
 instance toString Error
@@ -88,7 +91,7 @@ derive JSONEncode Error, Either
 /// ## Logging
 
 logAct ms w   :== putAct ms w
-logRes ms x w :== putRes ms x w
+logRes ms x w :== putRes ms x w//TODO refactor?
 logErr ms w   :== putErr ms w
 logWrn ms w   :== putWrn ms w
 logInf ms w   :== putInf ms w
@@ -114,19 +117,20 @@ derive JSONDecode Package
 
 createPackage :: FilePath *World -> *Return Package
 createPackageFromDependency :: DependencyInfo *World -> *Return Package
-showMainPackage :: *World -> *World
+showMainPackage :: *World -> *World//TODO remove?
+showMainModuleDictionary :: *World -> *World//TODO remove?
 
-showPackage :: Package *World -> *World
+showPackage :: Package *World -> *World//TODO remove?
 
-showModuleImports :: FilePath *World -> *World
+showModuleImports :: FilePath *World -> *World//TODO remove?
 calculateModuleImports :: FilePath *World -> *Return (Set Name)
 parseModuleImports :: String -> Result Error (Set Name)
 
+createModuleDictionary :: Package *World -> *Return Dictionary
+addPackageDependency :: DependencyInfo *World -> *Return Dictionary
+
 // showModuleDependencies :: FilePath *World -> *World
 // calculateModuleDependencies :: FilePath Dictionary *World -> *Return (Set Name)
-
-// createModuleDictionary :: Package *World -> *Result Dictionary
-// addPackageDependency :: DependencyInfo *World -> *Result Dictionary
 
 ////////////////////////////////////////////////////////////////////////////////
 /// # Manifest

@@ -113,3 +113,34 @@ instance Cast FileError Error where
 //     cast (Left e) = Left (cast e)
 //     cast (Right a) = Right a
 
+////////////////////////////////////////////////////////////////////////////////
+/// # Module dictionary
+////////////////////////////////////////////////////////////////////////////////
+
+mkDatabase :: [Package] -> Dictionary
+mkDatabase packages
+    = foldMap extractDatabase packages //XXX add duplication check of modules
+
+extractDatabase :: Package -> Dictionary
+extractDatabase package
+    = 'Map'.fromList $ 'List'.zip2 names paths
+    where ...
+
+extendDatabase :: Package Dictionary -> Dictionary
+extendDatabase package dictionary
+    // traceAct ["Extending module dictionary with", quote package.manifest.info.BasicInfo.name] $
+    = 'List'.foldr (uncurry 'Map'.insert) dictionary $ 'List'.zip2 moduleNames definitionPaths
+    where
+        moduleNames = maybe [] (\info -> info.modules) package.manifest.library
+        definitionPaths = 'List'.map transform moduleNames
+        transform name = package.Package.path </> maybe "" id package.manifest.info.sources </> replace moduleSeparator pathSeparator name <.> definitionExtension
+        //XXX someday: transform name = scrubPackageRoot </> package.name </> package.version </> package.sources </> replace moduleSeparator pathSeparator name <.> definitionExtension
+
+/// ## Resolving module definitionPaths
+
+lookupModule :: Name Dictionary -> Result Error FilePath
+lookupModule module dictionary
+    = case 'Map'.lookup module dictionary of
+        Nothing -> throw $ LookupError ("Could not find module " +++ quote module +++ " in packages")
+        Just path -> Ok path
+

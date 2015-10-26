@@ -79,7 +79,7 @@ instance toString Error where
     toString (NinjaError message)
         = "Ninja error: " +++ message
     toString (PackageError name modules)
-        = "Package " +++ name +++ " exports modules without implementation: " +++ fold modules
+        = "Package " +++ name +++ " exports modules without implementation: " +++ show modules
 
 ////////////////////////////////////////////////////////////////////////////////
 /// # Packages
@@ -92,14 +92,16 @@ derive JSONDecode Package
 
 createPackage :: FilePath *World -> *Return Package
 createPackage path world
+    # world = logInf ["Creating package info for", quote path] world
     # (result,world) = readManifest path world
     | isError result = (rethrow id result, world)
     # manifest = fromOk result
-    # world = logInf ["Creating package info for", quote path] world
+    # name = manifest.info.BasicInfo.name
     # modules = maybe [] (\lib -> lib.LibraryInfo.modules) manifest.library
-    # world = logRes ["Exported modules"] modules world
+    # world = logRes ["Exported modules from", quote name] modules world
     # sourceDirs = maybe [defaultSourceDir] id manifest.info.BasicInfo.sourceDirs
-    # world = logRes ["Source directories"] sourceDirs world
+    # sourceDirs = 'List'.map (combine path) sourceDirs
+    # world = logRes ["Source directories for", quote name] sourceDirs world
     # (results,world) = mapSt findLocalModules sourceDirs world
     # result = sequence results
     | isError result = (rethrow id result, world)
@@ -109,16 +111,15 @@ createPackage path world
     | not $ 'Map'.null missing = (throw $ PackageError manifest.info.BasicInfo.name ('Map'.keys missing), world)
     = (Ok
         { Package
-        | name = manifest.info.BasicInfo.name
+        | name = name
         , version = manifest.info.BasicInfo.version
         , authors = manifest.info.BasicInfo.authors
         , path = path
         , sourceDirs = sourceDirs
         , dependencies = maybe [] id manifest.Manifest.dependencies //TODO add clean-base as implicit dependencie for every package?
         , executables = maybe [defaultExecutable manifest.info.BasicInfo.name] id manifest.Manifest.executables
-        // , modules = 'Map'.intersection locals exports
         , locals = locals
-        , exports = exports
+        , exports = 'Map'.intersection locals exports
         // , dictionary = locals \/ exports /\ exports // Union on Maps is left biased! Exported modules without a .dcl now have an empty path.
         }, world)
 
@@ -134,12 +135,22 @@ showMainPackage world
     # package = fromOk result
     = showPackage package world
 
+showMainModuleDictionary :: *World -> *World
+showMainModuleDictionary world
+    # (result,world) = createPackage "." world
+    | isError result = putErr [toString $ fromError result] world
+    # package = fromOk result
+    # (result,world) = createModuleDictionary package world
+    | isError result = putErr [toString $ fromError result] world
+    # dictionary = fromOk result
+    = putStrLn (pretty $ 'Map'.toList dictionary) world 
+
 /// ## Methods
 
 showPackage :: Package *World -> *World
 showPackage package world
     # world = putAct ["Package information for", package.Package.name] world
-    = putStrLn (jsonPrettyPrint $ toJSON package) world
+    = putStrLn (pretty $ package) world
 
 /// ### Module Imports
 
@@ -162,59 +173,73 @@ calculateModuleImports path world
 parseModuleImports :: String -> Result Error (Set Name)
 parseModuleImports string = mapBoth ParseError 'Set'.fromList $ parseOnly imports string
 
-/*
-/// ### Module Dependencies
-
-showModuleDependencies :: FilePath Package *World -> *World
-showModuleDependencies path package
-    # world = putAct ["Calculating dependencies of", quote path] world
-    = seqSt putStrLn ('Set'.toList $ calculateModuleDependencies path) world
-    
-calculateModuleDependencies :: FilePath Package *World -> *Return (Set Name)
-calculateModuleDependencies path package world
-    # (result,world) = calculateModuleImports path world
-    | isError result = (result, world)
-    # todo = fromOk result
-    = go todo 'Set'.empty world
-    where
-        // go :: (Set a) (Set a) *World -> *Return (Set Name)
-        go todo done world
-            | 'Set'.null todo = (Ok done, world)
-            # (current,rest) = 'Set'.deleteFindMin todo
-            # result = lookupModule current dictionary
-            | isError result = (rethrow result, world)
-            # path = fromOk result
-            # (result,world) = calculateModuleImports path world
-            | isError result = (result, world)
-            # imports = fromOk result
-            # todo = rest \/ imports \\\ done
-            # done = 'Set'.insert current done
-            = go todo done world
-
 /// ### Module Database
 
 createModuleDictionary :: Package *World -> *Return Dictionary
-createMainDatabase package world
+createModuleDictionary package world
     # world = logInf ["Creating module dictionary"] world
-    # (results,world) = mapSt addPackageDependency package.dependencies world
+    # (results,world) = mapSt addPackageDependency package.Package.dependencies world
     # result = sequence results
-    | isError result = (rethrow result, world)
-    # dependencies = fromOk result
-    # others = 'List'.map (\p -> p.dictionary) dependencies
-    # (result,world) = localModules manifest world
-    | isError result = (result, world)
-    // putErr ["Error creating dictionary:", error] world
-    # locals = fromOk result
-    = (Ok $ 'List'.foldr 'Map'.union locals others, world)
+    | isError result = (rethrow id result, world)
+    # others = fromOk result
+    # dictionary = 'List'.foldr 'Map'.union package.locals others
+    = (Ok dictionary, world)
 
-addPackageDependency :: DependencyInfo *World -> *Result Dictionary
-*/
+addPackageDependency :: DependencyInfo *World -> *Return Dictionary
+addPackageDependency dependency world
+    # world = logInf ["Adding exported modules from", dependency.DependencyInfo.name, "version", dependency.DependencyInfo.version] world
+    # (result,world) = findPackage dependency.DependencyInfo.path world //TODO someday resolve by name and version
+    | isError result = (rethrow id result, world)
+    # package = fromOk result
+    # exports = package.exports
+    # world = logRes ["Added modules from", quote dependency.DependencyInfo.name] exports world
+    = (Ok exports, world)
+
+/// ### Module Dependencies
+
+// showModuleDependencies :: FilePath Package *World -> *World
+// showModuleDependencies path package world
+//     # world = putAct ["Calculating dependencies of", quote path] world
+//     = seqSt putStrLn ('Set'.toList $ calculateModuleDependencies path) world
+    
+// calculateModuleDependencies :: FilePath Package *World -> *Return (Set Name)
+// calculateModuleDependencies path package world
+//     # (result,world) = calculateModuleImports path world
+//     | isError result = (result, world)
+//     # todo = fromOk result
+//     = go todo 'Set'.empty world
+//     where
+//         // go :: (Set a) (Set a) *World -> *Return (Set Name)
+//         go todo done world
+//             | 'Set'.null todo = (Ok done, world)
+//             # (current,rest) = 'Set'.deleteFindMin todo
+//             # result = lookupModule current dictionary
+//             | isError result = (rethrow result, world)
+//             # path = fromOk result
+//             # (result,world) = calculateModuleImports path world
+//             | isError result = (result, world)
+//             # imports = fromOk result
+//             # todo = rest \/ imports \\\ done
+//             # done = 'Set'.insert current done
+//             = go todo done world
+
+/// # Package Registry
 
 /// ## Helpers
 
-findLocalModules :: FilePath *World -> *Return (Map Name FilePath)
+//TODO someday :: Name Version *World -> *Return Package
+findPackage :: FilePath *World -> *Return Package
+findPackage path world
+    # world = logInf ["Looking up package in", quote path] world
+    // # world = logInf ["Looking up package", name, ", version:", version] world
+    # (result,world) = createPackage path world
+    | isError result = (rethrow id result, world)
+    # package = fromOk result
+    = (Ok package, world)
+
+findLocalModules :: FilePath *World -> *Return Dictionary
 findLocalModules sourceDir world
-    # world = logInf ["Searching for local modules"] world
+    # world = logInf ["Looking up local modules in", quote sourceDir] world
     # (result,world) = findFiles definitionPredicate sourceDir world
     | isError result = (rethrow SystemError result, world)
     # definitionPaths = fromOk result
@@ -289,7 +314,7 @@ showMainManifest world
 showManifest :: Manifest *World -> *World
 showManifest manifest world
     # world = putAct ["Manifest information for", manifest.info.BasicInfo.name] world
-    = putStrLn (jsonPrettyPrint $ toJSON manifest) world
+    = putStrLn (pretty manifest) world
 
 writeManifest :: FilePath Manifest *World -> *Return ()
 writeManifest path manifest world
@@ -304,34 +329,4 @@ writeManifest path manifest world
 //XXX move elsewhere
 replace :: Char Char -> String -> String
 replace x y = toString o 'List'.map (\e -> e == x ? y $ e) o fromString
-
-////////////////////////////////////////////////////////////////////////////////
-/// # Module dictionary
-////////////////////////////////////////////////////////////////////////////////
-
-//extendDatabase :: Package Dictionary -> Dictionary
-//extendDatabase package dictionary
-//    // traceAct ["Extending module dictionary with", quote package.manifest.info.BasicInfo.name] $
-//    = 'List'.foldr (uncurry 'Map'.insert) dictionary $ 'List'.zip2 moduleNames definitionPaths
-//    where
-//        moduleNames = maybe [] (\info -> info.modules) package.manifest.library
-//        definitionPaths = 'List'.map transform moduleNames
-//        transform name = package.Package.path </> maybe "" id package.manifest.info.sources </> replace moduleSeparator pathSeparator name <.> definitionExtension
-//        //XXX someday: transform name = scrubPackageRoot </> package.name </> package.version </> package.sources </> replace moduleSeparator pathSeparator name <.> definitionExtension
-
-// mkDatabase :: [Package] -> Dictionary
-// mkDatabase packages
-//     = foldMap extractDatabase packages //XXX add duplication check of modules
-// extractDatabase :: Package -> Dictionary
-// extractDatabase package
-//     = 'Map'.fromList $ 'List'.zip2 names paths
-//     where ...
-
-/// ## Resolving module definitionPaths
-
-// lookupModule :: Name Dictionary -> Result Error FilePath
-// lookupModule module dictionary
-//     = case 'Map'.lookup module dictionary of
-//         Nothing -> throw $ LookupError ("Could not find module " +++ quote module +++ " in packages")
-//         Just path -> Ok path
 
