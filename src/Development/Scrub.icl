@@ -72,14 +72,14 @@ instance toString Error where
         = "Can not close " +++ quote path
     toString (FileError path IOError)
         = "An I/O error occured during modifcation of " +++ quote path
+    toString (PackageError name modules)
+        = "Package " +++ quote name +++ " exports modules without implementation: " +++ show modules
+    toString (LookupError module)
+        = "Could not find module " +++ quote module +++ " in packages"
     toString (ParseError message)
         = "Parse error: " +++ message
-    toString (LookupError message)
-        = "Lookup error: " +++ message
     toString (NinjaError message)
         = "Ninja error: " +++ message
-    toString (PackageError name modules)
-        = "Package " +++ name +++ " exports modules without implementation: " +++ show modules
 
 ////////////////////////////////////////////////////////////////////////////////
 /// # Packages
@@ -118,8 +118,8 @@ createPackage path world
         , sourceDirs = sourceDirs
         , dependencies = maybe [] id manifest.Manifest.dependencies //TODO add clean-base as implicit dependencie for every package?
         , executables = maybe [defaultExecutable manifest.info.BasicInfo.name] id manifest.Manifest.executables
-        , locals = locals
-        , exports = 'Map'.intersection locals exports
+        , localModules = locals
+        , exportedModules = 'Map'.intersection locals exports
         // , dictionary = locals \/ exports /\ exports // Union on Maps is left biased! Exported modules without a .dcl now have an empty path.
         }, world)
 
@@ -182,7 +182,7 @@ createModuleDictionary package world
     # result = sequence results
     | isError result = (rethrow id result, world)
     # others = fromOk result
-    # dictionary = 'List'.foldr 'Map'.union package.locals others
+    # dictionary = 'List'.foldr 'Map'.union package.localModules others
     = (Ok dictionary, world)
 
 addPackageDependency :: DependencyInfo *World -> *Return Dictionary
@@ -191,39 +191,46 @@ addPackageDependency dependency world
     # (result,world) = findPackage dependency.DependencyInfo.path world //TODO someday resolve by name and version
     | isError result = (rethrow id result, world)
     # package = fromOk result
-    # exports = package.exports
-    # world = logRes ["Added modules from", quote dependency.DependencyInfo.name] exports world
-    = (Ok exports, world)
+    # modules = package.localModules
+    # world = logRes ["Added modules from", quote dependency.DependencyInfo.name] modules world
+    = (Ok modules, world)
 
 /// ### Module Dependencies
 
-// showModuleDependencies :: FilePath Package *World -> *World
-// showModuleDependencies path package world
-//     # world = putAct ["Calculating dependencies of", quote path] world
-//     = seqSt putStrLn ('Set'.toList $ calculateModuleDependencies path) world
+showModuleDependencies :: Dictionary FilePath *World -> *World
+showModuleDependencies dictionary path world
+    # world = putAct ["Calculating dependencies of", quote path] world
+    # (result,world) = calculateModuleDependencies path dictionary world
+    | isError result = putErr [toString $ fromError result] world
+    # dependencies = fromOk result
+    = seqSt putStrLn ('Set'.toList dependencies) world
     
-// calculateModuleDependencies :: FilePath Package *World -> *Return (Set Name)
-// calculateModuleDependencies path package world
-//     # (result,world) = calculateModuleImports path world
-//     | isError result = (result, world)
-//     # todo = fromOk result
-//     = go todo 'Set'.empty world
-//     where
-//         // go :: (Set a) (Set a) *World -> *Return (Set Name)
-//         go todo done world
-//             | 'Set'.null todo = (Ok done, world)
-//             # (current,rest) = 'Set'.deleteFindMin todo
-//             # result = lookupModule current dictionary
-//             | isError result = (rethrow result, world)
-//             # path = fromOk result
-//             # (result,world) = calculateModuleImports path world
-//             | isError result = (result, world)
-//             # imports = fromOk result
-//             # todo = rest \/ imports \\\ done
-//             # done = 'Set'.insert current done
-//             = go todo done world
+calculateModuleDependencies :: FilePath Dictionary *World -> *Return (Set Name)
+calculateModuleDependencies path dictionary world
+    # (result,world) = calculateModuleImports path world
+    | isError result = (result, world)
+    # todo = fromOk result
+    = go todo 'Set'.empty world
+    where
+        // go :: (Set a) (Set a) *World -> *Return (Set Name)
+        go todo done world
+            | 'Set'.null todo = (Ok done, world)
+            # (current,rest) = 'Set'.deleteFindMin todo
+            # result = lookupModule current dictionary
+            | isError result = (rethrow id result, world)
+            # path = fromOk result
+            # (result,world) = calculateModuleImports path world
+            | isError result = (result, world)
+            # imports = fromOk result
+            # todo = rest \/ imports \\\ done
+            # done = 'Set'.insert current done
+            = go todo done world
 
-/// # Package Registry
+lookupModule :: Name Dictionary -> Result Error FilePath
+lookupModule module dictionary
+    = case 'Map'.lookup module dictionary of
+        Nothing -> throw $ LookupError module
+        Just path -> Ok path
 
 /// ## Helpers
 

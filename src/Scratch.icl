@@ -136,11 +136,3 @@ extendDatabase package dictionary
         transform name = package.Package.path </> maybe "" id package.manifest.info.sources </> replace moduleSeparator pathSeparator name <.> definitionExtension
         //XXX someday: transform name = scrubPackageRoot </> package.name </> package.version </> package.sources </> replace moduleSeparator pathSeparator name <.> definitionExtension
 
-/// ## Resolving module definitionPaths
-
-lookupModule :: Name Dictionary -> Result Error FilePath
-lookupModule module dictionary
-    = case 'Map'.lookup module dictionary of
-        Nothing -> throw $ LookupError ("Could not find module " +++ quote module +++ " in packages")
-        Just path -> Ok path
-

@@ -77,8 +77,8 @@ parseVersion :: String -> Either String Version
     = SystemError OSError
     | FileError FilePath FileError
     | PackageError Name [Name]
+    | LookupError Name
 
-    | LookupError String
     | ParseError String
     | NinjaError String
     // | ...
@@ -96,6 +96,12 @@ logErr ms w   :== putErr ms w
 logWrn ms w   :== putWrn ms w
 logInf ms w   :== putInf ms w
 
+// logAct ms w   :== w
+// logRes ms x w :== w//TODO refactor?
+// logErr ms w   :== w
+// logWrn ms w   :== w
+// logInf ms w   :== w
+
 ////////////////////////////////////////////////////////////////////////////////
 /// # Packages
 ////////////////////////////////////////////////////////////////////////////////
@@ -108,8 +114,8 @@ logInf ms w   :== putInf ms w
     , sourceDirs :: [FilePath]
     , dependencies :: [DependencyInfo] //Map Name (Either VersionConstraint DependencyInfo)
     , executables :: [ExecutableInfo]
-    , locals :: Map Name FilePath //XXX Set Name ???
-    , exports :: Map Name FilePath //XXX
+    , localModules :: Map Name FilePath //XXX Set Name ???
+    , exportedModules :: Map Name FilePath //XXX
     }
 
 derive JSONEncode Package
@@ -129,8 +135,8 @@ parseModuleImports :: String -> Result Error (Set Name)
 createModuleDictionary :: Package *World -> *Return Dictionary
 addPackageDependency :: DependencyInfo *World -> *Return Dictionary
 
-// showModuleDependencies :: FilePath *World -> *World
-// calculateModuleDependencies :: FilePath Dictionary *World -> *Return (Set Name)
+showModuleDependencies :: Dictionary FilePath *World -> *World
+calculateModuleDependencies :: FilePath Dictionary *World -> *Return (Set Name)
 
 ////////////////////////////////////////////////////////////////////////////////
 /// # Manifest

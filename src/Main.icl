@@ -39,8 +39,14 @@ run "modules" args world
     // # packages = fromOk result
     // = seqSt showModuleDictionary packages world
 
-// run "dependencies" args world
-//     = seqSt showDependencies args world
+run "dependencies" args world
+    # (result,world) = createPackage "." world
+    | isError result = putErr [toString $ fromError result] world
+    # package = fromOk result
+    # (result,world) = createModuleDictionary package world
+    | isError result = putErr [toString $ fromError result] world
+    # dictionary = fromOk result
+    = seqSt (showModuleDependencies dictionary) args world
 
 run "generate" args world
     = undef
