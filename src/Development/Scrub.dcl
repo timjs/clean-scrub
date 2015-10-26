@@ -72,7 +72,7 @@ parseVersion :: String -> Either String Version
 
 :: Error
     = SystemError OSError
-    | FileError FileError
+    | FileError FilePath FileError
     | LookupError String
     | ParseError String
     | NinjaError String

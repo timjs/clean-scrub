@@ -66,8 +66,12 @@ derive JSONEncode Error, Either, FileError
 instance toString Error where
     toString (SystemError (error, message))
         = "A system error occured: (E" +++ toString error +++ ") " +++ message
-    toString (FileError error)
-        = "File error: " +++ toString error
+    toString (FileError path CannotOpen)
+        = "Can not open " +++ quote path +++ ", no such file or directory"
+    toString (FileError path CannotClose)
+        = "Can not close " +++ quote path
+    toString (FileError path IOError)
+        = "An I/O error occured during modifcation of " +++ quote path
     toString (ParseError message)
         = "Parse error: " +++ message
     toString (LookupError message)
@@ -151,7 +155,7 @@ calculateModuleImports :: FilePath *World -> *Return (Set Name)
 calculateModuleImports path world
     # world = logInf ["Reading contents of", quote path] world
     # (result,world) = readFile path world
-    | isError result = (rethrow FileError result, world)
+    | isError result = (rethrow (FileError path) result, world)
     # string = fromOk result
     = (parseModuleImports string, world)
 
@@ -259,7 +263,7 @@ readManifest path world
     # world = logInf ["Reading manifest file from", quote path] world
     # (result,world) = readFile (path </> manifestFilename) world
     // putErr ["Error reading manifest file from", quote path, ":", toString error] world
-    | isError result = (rethrow FileError result, world)
+    | isError result = (rethrow (FileError path) result, world)
     # string = fromOk result
     # maybe = fromJSON $ fromString string
     | isNothing maybe = (throw $ ParseError "Could not parse manifest file", world)
@@ -292,7 +296,7 @@ writeManifest path manifest world
     # world = logInf ["Writing manifest file to", quote path] world
     # (result,world) = writeFile path (toString $ toJSON manifest) world
     // putErr ["Could not write manifest to", quote path, ":", toString error] world
-    | isError result = (rethrow FileError result, world)//FIXME ugly
+    | isError result = (rethrow (FileError path) result, world)//FIXME ugly
     = (Ok (), world)
 
 /// ### Helpers
