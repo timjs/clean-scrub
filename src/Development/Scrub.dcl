@@ -10,7 +10,7 @@ from Data.String import class toString(..)
 from Text.JSON import generic JSONDecode, generic JSONEncode, :: JSONNode
 
 from System.File import :: FileError
-from System.FilePath import :: FilePath
+from System.FilePath import :: FilePath, </>, combine
 from System.OSError import :: OSError, :: OSErrorCode, :: OSErrorMessage
 
 import System.Console.Output
@@ -21,6 +21,8 @@ import System.Console.Output
 
 manifestFilename :== "Scrub.json" //TODO change to .toml
 defaultSourceDir :== "src/"
+defaultExecutableFile :== "Main.icl"
+defaultExecutable name :== { ExecutableInfo | name = name, main = defaultSourceDir </> defaultExecutableFile }
 definitionExtension :== "dcl" //XXX move elsewhere
 moduleSeparator :== '.'
 
@@ -101,6 +103,8 @@ logInf ms w   :== putInf ms w
     , authors :: [Author]
     , path :: FilePath
     , sourceDirs :: [FilePath]
+    , dependencies :: [DependencyInfo] //Map Name (Either VersionConstraint DependencyInfo)
+    , executables :: [ExecutableInfo]
     , locals :: Map Name FilePath //XXX Set Name ???
     , exports :: Map Name FilePath //XXX
     }

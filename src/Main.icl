@@ -1,5 +1,10 @@
 module Main
 
+/// Scrub is a ...
+///
+/// Shortcommings:
+/// * Does not resolve dependencies of dependencies yet
+
 import Data.Func
 import Data.List
 import Data.Result

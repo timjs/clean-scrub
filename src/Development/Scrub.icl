@@ -110,6 +110,8 @@ createPackage path world
         , authors = manifest.info.BasicInfo.authors
         , path = path
         , sourceDirs = sourceDirs
+        , dependencies = maybe [] id manifest.Manifest.dependencies //TODO add clean-base as implicit dependencie for every package?
+        , executables = maybe [defaultExecutable manifest.info.BasicInfo.name] id manifest.Manifest.executables
         // , modules = 'Map'.intersection locals exports
         , locals = locals
         , exports = exports
@@ -161,7 +163,7 @@ parseModuleImports string = mapBoth ParseError 'Set'.fromList $ parseOnly import
 
 showModuleDependencies :: FilePath Package *World -> *World
 showModuleDependencies path package
-    # world = putAct ["Calculating dependecies of", quote path] world
+    # world = putAct ["Calculating dependencies of", quote path] world
     = seqSt putStrLn ('Set'.toList $ calculateModuleDependencies path) world
     
 calculateModuleDependencies :: FilePath Package *World -> *Return (Set Name)
