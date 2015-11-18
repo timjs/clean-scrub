@@ -5,7 +5,7 @@ from Data.Result import :: Result, :: Either
 from Data.Maybe import :: Maybe
 from Data.Map import :: Map
 from Data.Set import :: Set
-from Data.String import class toString(..)
+from Data.Show import class toString(..)
 
 from Text.JSON import generic JSONDecode, generic JSONEncode, :: JSONNode
 from Text.JSON import generic JSONDecode, generic JSONEncode, :: JSONNode

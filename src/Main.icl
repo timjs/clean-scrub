@@ -8,7 +8,7 @@ module Main
 import Data.Func
 import Data.List
 import Data.Result
-import Data.String
+import Data.Show
 import Data.Tuple
 
 import Data.Traversable
