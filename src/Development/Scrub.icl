@@ -1,15 +1,7 @@
 implementation module Development.Scrub
 
-//TODO make Prelude
-import Data.Char
-import Data.Bool
-import Data.Func
-import Data.Maybe
-import Data.Result
-import Data.String
-import Data.Tuple
-import Data.Eq
-import Data.Ord
+import Prelude
+
 import Data.Foldable
 import Data.Traversable
 
@@ -28,7 +20,7 @@ import System.FilePath.Find
 import System.OSError
 import System.Process
 
-import Text.Attoparsec
+import Text.Femtoparsec
 import Text.JSON
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -262,23 +254,23 @@ findLocalModules sourceDir world
 isName :: Char -> Bool
 isName c = isAlphaNum c || c == '_' || c == '`' || c == '.'
 
-name :: Parser Char t Name
-name = toString <$> some (satisfy isName)
+name :: Parser Name
+name = takeWhile1 isName
 
-names :: Parser Char t [Name]
-names = sepBy1 name (char ',' *> blank)
+names :: Parser [Name]
+names = sepBy1 name (char ',' *> skipHorizontalSpace1)
 
-importLine :: Parser Char t [Name]
-importLine = string "import" *> blank *> optional (string "qualified" *> blank) *> names <* rest
+importLine :: Parser [Name]
+importLine = string "import" *> skipHorizontalSpace1 *> optional (string "qualified" *> skipHorizontalSpace1) *> names <* restOfLine
 
-fromLine :: Parser Char t [Name]
-fromLine = 'List'.singleton <$> (string "from" *> blank *> name <* rest)
+fromLine :: Parser [Name]
+fromLine = (\x -> [x]) <$> (string "from" *> skipHorizontalSpace1 *> name <* restOfLine)
 
-otherLine :: Parser Char t [Name]
-otherLine = rest *> pure []
+otherLine :: Parser [Name]
+otherLine = restOfLine *> pure []
 
-imports :: Parser Char t [Name]
-imports = concat <$> many (importLine <|> fromLine <|> otherLine)
+imports :: Parser [Name]
+imports = 'List'.flatten <$> many (importLine <|> fromLine <|> otherLine)
 
 ////////////////////////////////////////////////////////////////////////////////
 /// # Manifest
