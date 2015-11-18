@@ -1,6 +1,6 @@
 implementation module Data.String
 
-import Prelude
+import Base
 
 import qualified Data.List as List
 

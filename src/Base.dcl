@@ -1,4 +1,4 @@
-definition module Prelude
+definition module Base
 
 import Data.Bool
 import Data.Char

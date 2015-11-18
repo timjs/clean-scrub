@@ -3,9 +3,23 @@
 // # Notation
 //
 
+// Clean syntax with let-before
+findLocalModules :: FilePath -> Run Dictionary
+findLocalModules sourceDir world
+    # world = logInf ["Looking up local modules in", quote sourceDir] world
+    # (result,world) = findFiles definitionPredicate sourceDir world
+    | isError result = (rethrow SystemError result, world)
+    # definitionPaths = fromOk result
+    # moduleNames = 'List'.map translate definitionPaths
+    # world = logRes ["Found local modules"] moduleNames world
+    = (Ok $ 'Map'.fromList ('List'.zip2 moduleNames definitionPaths), world)
+    where
+        translate = replace pathSeparator moduleSeparator o makeRelative sourceDir o dropExtension
+        definitionPredicate info = takeExtension info.FileInformation.path == definitionExtension
+
 // Haskell syntax with do-notation
-localModules :: Manifest -> Run Database
-localModules manifest = do
+findLocalModules :: Manifest -> Run Database
+findLocalModules manifest = do
     tell $ Info "Searching for local modules"
     tell $ Result "Source directory" sourceDir
     definitionPaths <- wrapRun $ findFiles definitionPredicate sourceDir
@@ -18,22 +32,22 @@ localModules manifest = do
         transform = replace pathSeparator moduleSeparator o makeRelative sourceDir o dropExtension
 
 // Manual binds, with stronger dollar
-localModules :: Manifest -> Run Database
-localModules manifest =
+findLocalModules :: Manifest -> Run Database
+findLocalModules manifest =
     lift tell $$ Info "Searching for local modules" >>
     lift tell $$ Result "Source directory" sourceDir >>
     wrapRun $$ findFiles definitionPredicate sourceDir >>= \definitionPaths -> 
     let moduleNames = 'List'.map transform definitionPaths in
-    lift tell $$ Result "Found local modules" moduleNames >>
-    return $$ 'Map'.fromList $$ 'List'.zip2 moduleNames definitionPaths
+    lift tell $$ Result "Found local modules" moduleNames >>|
+    'Map'.fromList $$ 'List'.zip2 moduleNames definitionPaths
     where
         definitionPredicate info = takeExtension info.FileInformation.path == definitionExtension
         sourceDir = maybe "./src" id manifest.package.sources
         transform = replace pathSeparator moduleSeparator o makeRelative sourceDir o dropExtension
 
 // Manual binds, with directed pipe
-localModules :: Manifest -> Run Database
-localModules manifest =
+findLocalModules :: Manifest -> Run Database
+findLocalModules manifest =
     lift tell <| Info "Searching for local modules" >>
     lift tell <| Result "Source directory" sourceDir >>
     wrapRun <| findFiles definitionPredicate sourceDir >>= \definitionPaths -> 
@@ -45,11 +59,55 @@ localModules manifest =
         sourceDir = maybe "./src" id manifest.package.sources
         transform = replace pathSeparator moduleSeparator o makeRelative sourceDir o dropExtension
 
+// Manual binds, with directed pipe
+findLocalModules :: Manifest -> Run Database
+findLocalModules manifest =
+    logInfo "Searching for local modules" >>
+    logResult "Source directory" sourceDir >>
+    findFiles definitionPredicate sourceDir |> wrapRun >>= \definitionPaths -> 
+    let moduleNames = 'List'.map transform definitionPaths in
+    logResult "Found local modules" moduleNames >>|
+    'List'.zip2 moduleNames definitionPaths |> 'Map'.fromList
+    where
+        definitionPredicate info = takeExtension info.FileInformation.path == definitionExtension
+        sourceDir = maybe "./src" id manifest.package.sources
+        transform = replace pathSeparator moduleSeparator o makeRelative sourceDir o dropExtension
+
+// Manual binds, with directed pipe
+findLocalModules :: FilePath -> Run Dictionary
+findLocalModules sourceDir =
+    logInf ["Looking up local modules in", quote sourceDir] >>
+    findFiles definitionPredicate sourceDir @ wrapRun >>= \definitionPaths ->
+    let moduleNames = 'List'.map translate definitionPaths in
+    logRes ["Found local modules"] moduleNames >>|
+    'Map'.fromList ('List'.zip2 moduleNames definitionPaths)
+    where
+        translate = replace pathSeparator moduleSeparator o makeRelative sourceDir o dropExtension
+        definitionPredicate info = takeExtension info.FileInformation.path == definitionExtension
+
 createDatabase manifest world
     tell [Info "Creating main module database"]
     packages <- sequence $ traverse createPackage manifest.dependencies
-    database <- localModules manifest
+    database <- findLocalModules manifest
     return $ 'List'.foldr extendDatabase database packages
+
+createDatabase manifest world =
+    logInfo ["Creating main module database"] >>
+    traverse createPackage manifest.dependencies @ sequence >>= \packages ->
+    findLocalModules manifest >>= \database ->
+    'List'.foldr extendDatabase database packages @ return
+
+createDatabase manifest world =
+    logInfo ["Creating main module database"] >>
+    traverse createPackage manifest.dependencies & sequence >>= \packages ->
+    findLocalModules manifest >>= \database ->
+    'List'.foldr extendDatabase database packages & return
+
+createDatabase manifest world =
+    logInfo ["Creating main module database"] >>
+    traverse createPackage manifest.dependencies |> sequence >>= \packages ->
+    findLocalModules manifest >>= \database ->
+    'List'.foldr extendDatabase database packages |> return
 
 //
 // # Ideas

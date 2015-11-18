@@ -1,6 +1,6 @@
 implementation module Development.Scrub
 
-import Prelude
+import Base
 
 import Data.Foldable
 import Data.Traversable

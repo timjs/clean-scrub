@@ -1,6 +1,6 @@
 implementation module Data.Slice
 
-import Prelude
+import Base
 
 import qualified Data.String as String
 

@@ -1,6 +1,6 @@
 implementation module Text.Femtoparsec
 
-import Prelude
+import Base
 
 import qualified Data.String as String
 import qualified Data.Slice as Slice

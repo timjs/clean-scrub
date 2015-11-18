@@ -5,12 +5,9 @@ module Main
 /// Shortcommings:
 /// * Does not resolve dependencies of dependencies yet
 
-import Data.Func
-import Data.List
-import Data.Result
-import Data.Show
-import Data.Tuple
+import Base
 
+import Data.List
 import Data.Traversable
 
 import System.CommandLine
@@ -92,3 +89,4 @@ Start world
     //     Error e
     //         # world = putErr [toString e] world
     //         = snd $ exit 1 world
+
