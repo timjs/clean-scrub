@@ -62,6 +62,20 @@ MainModule
 		Fusion:	False
 OtherModules
 	Module
+		Name:	Base
+		Dir:	{Project}/src
+		Compiler
+			NeverMemoryProfile:	False
+			NeverTimeProfile:	False
+			StrictnessAnalysis:	True
+			ListTypes:	StrictExportTypes
+			ListAttributes:	True
+			Warnings:	True
+			Verbose:	True
+			ReadableABC:	False
+			ReuseUniqueNodes:	True
+			Fusion:	False
+	Module
 		Name:	Data.Slice
 		Dir:	{Project}/src
 		Compiler
@@ -91,20 +105,6 @@ OtherModules
 			Fusion:	False
 	Module
 		Name:	Development.Scrub
-		Dir:	{Project}/src
-		Compiler
-			NeverMemoryProfile:	False
-			NeverTimeProfile:	False
-			StrictnessAnalysis:	True
-			ListTypes:	StrictExportTypes
-			ListAttributes:	True
-			Warnings:	True
-			Verbose:	True
-			ReadableABC:	False
-			ReuseUniqueNodes:	True
-			Fusion:	False
-	Module
-		Name:	Prelude
 		Dir:	{Project}/src
 		Compiler
 			NeverMemoryProfile:	False

@@ -82,8 +82,8 @@ derive JSONDecode Package
 
 /// ## Initialisers
 
-createPackage :: FilePath *World -> *Return Package
-createPackage path world
+createPackage :: FilePath -> Run Package
+createPackage path = \world
     # world = logInf ["Creating package info for", quote path] world
     # (result,world) = readManifest path world
     | isError result = (rethrow id result, world)
@@ -115,8 +115,8 @@ createPackage path world
         // , dictionary = locals \/ exports /\ exports // Union on Maps is left biased! Exported modules without a .dcl now have an empty path.
         }, world)
 
-createPackageFromDependency :: DependencyInfo *World -> *Return Package
-createPackageFromDependency info world
+createPackageFromDependency :: DependencyInfo -> Run Package
+createPackageFromDependency info = \world
     # path = info.DependencyInfo.path //TODO change to dir in registry
     = createPackage path world
 
@@ -154,8 +154,8 @@ showModuleImports path world
     # imports = fromOk result
     = seqSt putStrLn ('Set'.toList imports) world
 
-calculateModuleImports :: FilePath *World -> *Return (Set Name)
-calculateModuleImports path world
+calculateModuleImports :: FilePath -> Run (Set Name)
+calculateModuleImports path = \world
     # world = logInf ["Reading contents of", quote path] world
     # (result,world) = readFile path world
     | isError result = (rethrow (FileError path) result, world)
@@ -167,8 +167,8 @@ parseModuleImports string = mapBoth ParseError 'Set'.fromList $ parseOnly import
 
 /// ### Module Database
 
-createModuleDictionary :: Package *World -> *Return Dictionary
-createModuleDictionary package world
+createModuleDictionary :: Package -> Run Dictionary
+createModuleDictionary package = \world
     # world = logInf ["Creating module dictionary"] world
     # (results,world) = mapSt addPackageDependency package.Package.dependencies world
     # result = sequence results
@@ -177,8 +177,8 @@ createModuleDictionary package world
     # dictionary = 'List'.foldr 'Map'.union package.localModules others
     = (Ok dictionary, world)
 
-addPackageDependency :: DependencyInfo *World -> *Return Dictionary
-addPackageDependency dependency world
+addPackageDependency :: DependencyInfo -> Run Dictionary
+addPackageDependency dependency = \world
     # world = logInf ["Adding exported modules from", dependency.DependencyInfo.name, "version", dependency.DependencyInfo.version] world
     # (result,world) = findPackage dependency.DependencyInfo.path world //TODO someday resolve by name and version
     | isError result = (rethrow id result, world)
@@ -197,14 +197,14 @@ showModuleDependencies dictionary path world
     # dependencies = fromOk result
     = seqSt putStrLn ('Set'.toList dependencies) world
     
-calculateModuleDependencies :: FilePath Dictionary *World -> *Return (Set Name)
-calculateModuleDependencies path dictionary world
+calculateModuleDependencies :: FilePath Dictionary -> Run (Set Name)
+calculateModuleDependencies path dictionary = \world
     # (result,world) = calculateModuleImports path world
     | isError result = (result, world)
     # todo = fromOk result
     = go todo 'Set'.empty world
     where
-        // go :: (Set a) (Set a) *World -> *Return (Set Name)
+        // go :: (Set a) (Set a) -> Run (Set Name)
         go todo done world
             | 'Set'.null todo = (Ok done, world)
             # (current,rest) = 'Set'.deleteFindMin todo
@@ -226,9 +226,9 @@ lookupModule module dictionary
 
 /// ## Helpers
 
-//TODO someday :: Name Version *World -> *Return Package
-findPackage :: FilePath *World -> *Return Package
-findPackage path world
+//TODO someday :: Name Version -> Run Package
+findPackage :: FilePath -> Run Package
+findPackage path = \world
     # world = logInf ["Looking up package in", quote path] world
     // # world = logInf ["Looking up package", name, ", version:", version] world
     # (result,world) = createPackage path world
@@ -236,8 +236,8 @@ findPackage path world
     # package = fromOk result
     = (Ok package, world)
 
-findLocalModules :: FilePath *World -> *Return Dictionary
-findLocalModules sourceDir world
+findLocalModules :: FilePath -> Run Dictionary
+findLocalModules sourceDir = \world
     # world = logInf ["Looking up local modules in", quote sourceDir] world
     # (result,world) = findFiles definitionPredicate sourceDir world
     | isError result = (rethrow SystemError result, world)
@@ -281,9 +281,9 @@ derive JSONEncode Manifest, BasicInfo, DependencyInfo, LibraryInfo, ExecutableIn
 
 /// ## Initialisers
 
-readManifest :: FilePath *World -> *Return Manifest
+readManifest :: FilePath -> Run Manifest
 // readManifest path = ... fromJSON $ fromString <$> readFile (path </> manifestFilename)
-readManifest path world
+readManifest path = \world
     # world = logInf ["Reading manifest file from", quote path] world
     # (result,world) = readFile (path </> manifestFilename) world
     // putErr ["Error reading manifest file from", quote path, ":", toString error] world
@@ -294,8 +294,8 @@ readManifest path world
     # manifest = fromJust maybe
     = (Ok manifest, world)
 
-readMainManifest :: *World -> *Return Manifest
-readMainManifest world
+readMainManifest :: Run Manifest
+readMainManifest = \world
     // # world = logInf ["Reading main manifest file"] world
     = readManifest "." world
 
@@ -315,8 +315,8 @@ showManifest manifest world
     # world = putAct ["Manifest information for", manifest.info.BasicInfo.name] world
     = putStrLn (pretty manifest) world
 
-writeManifest :: FilePath Manifest *World -> *Return ()
-writeManifest path manifest world
+writeManifest :: FilePath Manifest -> Run ()
+writeManifest path manifest = \world
     # world = logInf ["Writing manifest file to", quote path] world
     # (result,world) = writeFile path (toString $ toJSON manifest) world
     // putErr ["Could not write manifest to", quote path, ":", toString error] world

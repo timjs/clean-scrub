@@ -60,16 +60,12 @@ parseVersion :: String -> Either String Version
 /// The `Run` monad is essentially an Exception monad stacked on top of the IO
 /// monad. Sadly monad transformers in Clean are heavy (because they are boxed)
 /// and ugly (because there is no do-notation). Therefore we define this as a
-/// type-macro and use let-before syntax to pack and unpack this structure.
-// TODO:
-//   Replace alle instances of `*World -> Return` with `Run`
-//   after new let-before syntax extension is introduced.
-//   (Apperently this violates strictness analysis...)
+/// type-macro and use let-before syntax to use this structure.
 // :: Run a :== WriterT [Message] (ExceptT Error (IO)) a
 // :: Run a :== ExceptT Error (WriterT [Message] (IO)) a
 // :: Run a :== World -> (([Message], Either Error a),World)
-// :: Run a :== *World -> (Either Error a, *World)
-:: Return a :== .(Either Error a, .World)
+
+:: Run a :== *World -> *(Either Error a, *World)
 
 /// ## Errors
 
@@ -121,22 +117,22 @@ logInf ms w   :== putInf ms w
 derive JSONEncode Package
 derive JSONDecode Package
 
-createPackage :: FilePath *World -> *Return Package
-createPackageFromDependency :: DependencyInfo *World -> *Return Package
+createPackage :: FilePath -> Run Package
+createPackageFromDependency :: DependencyInfo -> Run Package
 showMainPackage :: *World -> *World//TODO remove?
 showMainModuleDictionary :: *World -> *World//TODO remove?
 
 showPackage :: Package *World -> *World//TODO remove?
 
 showModuleImports :: FilePath *World -> *World//TODO remove?
-calculateModuleImports :: FilePath *World -> *Return (Set Name)
+calculateModuleImports :: FilePath -> Run (Set Name)
 parseModuleImports :: String -> Result Error (Set Name)
 
-createModuleDictionary :: Package *World -> *Return Dictionary
-addPackageDependency :: DependencyInfo *World -> *Return Dictionary
+createModuleDictionary :: Package -> Run Dictionary
+addPackageDependency :: DependencyInfo -> Run Dictionary
 
 showModuleDependencies :: Dictionary FilePath *World -> *World
-calculateModuleDependencies :: FilePath Dictionary *World -> *Return (Set Name)
+calculateModuleDependencies :: FilePath Dictionary -> Run (Set Name)
 
 ////////////////////////////////////////////////////////////////////////////////
 /// # Manifest
@@ -176,12 +172,12 @@ calculateModuleDependencies :: FilePath Dictionary *World -> *Return (Set Name)
 derive JSONDecode Manifest
 derive JSONEncode Manifest
 
-readManifest :: FilePath *World -> *Return Manifest
-readMainManifest :: *World -> *Return Manifest
+readManifest :: FilePath -> Run Manifest
+readMainManifest :: Run Manifest
 showMainManifest :: *World -> *World
 
 showManifest :: Manifest *World -> *World
-writeManifest :: FilePath Manifest *World -> *Return ()
+writeManifest :: FilePath Manifest -> Run ()
 
 ////////////////////////////////////////////////////////////////////////////////
 /// # Modules
@@ -194,4 +190,4 @@ writeManifest :: FilePath Manifest *World -> *Return ()
 //     , dependencies :: Set Name
 //     }
 
-// createModule :: FilePath *World -> *Return Module
+// createModule :: FilePath -> Run Module
