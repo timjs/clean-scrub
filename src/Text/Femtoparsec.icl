@@ -11,8 +11,8 @@ import qualified Data.List as List
 /// # Types
 ////////////////////////////////////////////////////////////////////////////////
 
-:: Parser a = Parser (Slice -> Result a)
-:: Result a
+:: Parser a =: Parser (Slice -> Parsed a)
+:: Parsed a
     = Done Slice a
     | Fail Slice Message
 :: Message :== String
@@ -24,15 +24,15 @@ import qualified Data.List as List
 parseOnly :: (Parser a) String -> Either Message a
 parseOnly p s = eitherResult $ parse p $ 'Slice'.wrap s
 
-maybeResult :: (Result a) -> Maybe a
+maybeResult :: (Parsed a) -> Maybe a
 maybeResult (Done _ a) = Just a
 maybeResult (Fail _ _) = Nothing
 
-eitherResult :: (Result a) -> Either Message a
+eitherResult :: (Parsed a) -> Either Message a
 eitherResult (Done _ a) = Right a
 eitherResult (Fail _ e) = Left e
 
-// parse :: (Parser a) String -> Result a
+// parse :: (Parser a) String -> Parsed a
 parse (Parser p) s :== p s
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -41,36 +41,36 @@ parse (Parser p) s :== p s
 
 instance Functor Parser where
     fmap f p
-        = Parser $ \s -> case parse p s of
+        = Parser (\s -> case parse p s of
             Done s` a -> Done s` (f a)
-            Fail s` e -> Fail s` e
+            Fail s` e -> Fail s` e)
 
 instance Applicative Parser where
-    pure a = Parser $ \s -> Done s a
+    pure a = Parser (\s -> Done s a)
 
-    (<*>) p q = Parser $ \s -> case parse p s of
+    (<*>) p q = Parser (\s -> case parse p s of
         Done s` f -> case parse q s` of
             Done s`` a -> Done s`` (f a)
             Fail s`` e -> Fail s`` e
-        Fail s` e -> Fail s` e
+        Fail s` e -> Fail s` e)
 
 instance Alternative Parser where
-    empty = Parser $ \s -> Fail s ""
+    empty = Parser (\s -> Fail s "")
 
-    (<|>) p q = Parser $ \s -> case parse p s of
+    (<|>) p q = Parser (\s -> case parse p s of
         Fail _ _ -> parse q s // Backtracking!
-        done -> done
+        done -> done)
 
 ////////////////////////////////////////////////////////////////////////////////
 /// # Individual characters
 ////////////////////////////////////////////////////////////////////////////////
 
 satisfy :: (Char -> Bool) -> Parser Char
-satisfy t = Parser $ \s -> case 'Slice'.uncons s of
+satisfy t = Parser (\s -> case 'Slice'.uncons s of
     Just (c`,s`)
         | t c` -> Done s` c`
         | otherwise -> Fail s "satisfy: no match"
-    Nothing -> Fail s "satisfy: empty string"
+    Nothing -> Fail s "satisfy: empty string")
 
 char :: Char -> Parser Char
 char c = satisfy ((==) c)
@@ -109,9 +109,9 @@ restOfLine :: Parser ()
 restOfLine = skipTill isEndOfLine *> endOfLine
 
 endOfInput :: Parser ()
-endOfInput = Parser $ \s -> 'Slice'.isEmpty s ?
+endOfInput = Parser (\s -> 'Slice'.isEmpty s ?
     Done s () $
-    Fail s "endOfInput: there is more"
+    Fail s "endOfInput: there is more")
 
 // endOfInput :: Parser ()
 // endOfInput = Parser $ \s ->
@@ -127,9 +127,9 @@ endOfInput = Parser $ \s -> 'Slice'.isEmpty s ?
 ////////////////////////////////////////////////////////////////////////////////
 
 string :: String -> Parser String
-string p = Parser $ \s -> if ('Slice'.isPrefixOf p s)
+string p = Parser (\s -> if ('Slice'.isPrefixOf p s)
     (Done ('Slice'.drop ('String'.length p) s) p)
-    (Fail s "string: no match")
+    (Fail s "string: no match"))
 
 /// Not in Attoparsec
 word :: Parser String
@@ -142,28 +142,28 @@ between o c = char o *> takeTill ((==) c) <* char c
 /// ## Given number
 
 take :: Int -> Parser String
-take n = Parser $ \s -> case 'Slice'.splitAt n s of
-    (p,s`) -> Done s` ('Slice'.unwrap p) // Never fails!
+take n = Parser (\s -> case 'Slice'.splitAt n s of
+    (p,s`) -> Done s` ('Slice'.unwrap p)) // Never fails!
 
 skip :: Int -> Parser ()
-skip n = Parser $ \s -> Done ('Slice'.drop n s) () // Never fails!
+skip n = Parser (\s -> Done ('Slice'.drop n s) ()) // Never fails!
 
 /// ## While predicate holds
 
 takeWhile :: (Char -> Bool) -> Parser String
-takeWhile t = Parser $ \s -> case 'Slice'.span t s of
-    (p,s`) -> Done s` ('Slice'.unwrap p) // Never fails!
+takeWhile t = Parser (\s -> case 'Slice'.span t s of
+    (p,s`) -> Done s` ('Slice'.unwrap p)) // Never fails!
 
 takeWhile1 :: (Char -> Bool) -> Parser String
-takeWhile1 t = Parser $ \s -> case 'Slice'.span t s of
+takeWhile1 t = Parser (\s -> case 'Slice'.span t s of
     // ("",_) -> Fail s "takeWhile1: no match"
     // (p,s`) -> Done s` ('Slice'.unwrap p)
     (p,s`)
         | 'Slice'.isEmpty p -> Fail s "takeWhile1: no match"
-        | otherwise -> Done s` ('Slice'.unwrap p)
+        | otherwise -> Done s` ('Slice'.unwrap p))
 
 skipWhile :: (Char -> Bool) -> Parser ()
-skipWhile t = Parser $ \s -> Done ('Slice'.dropWhile t s) () // Never fails!
+skipWhile t = Parser (\s -> Done ('Slice'.dropWhile t s) ()) // Never fails!
 
 skipWhile1 :: (Char -> Bool) -> Parser ()
 skipWhile1 t = void (takeWhile1 t)
