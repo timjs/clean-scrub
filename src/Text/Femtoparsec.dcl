@@ -14,6 +14,8 @@ from Data.Slice import :: Slice
 
 :: Parser a =: Parser (Slice -> Parsed a)
 :: Parsed a
+    = Done Slice a
+    | Fail Slice Message
 :: Message :== String
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -21,8 +23,8 @@ from Data.Slice import :: Slice
 ////////////////////////////////////////////////////////////////////////////////
 
 parseOnly :: (Parser a) String -> Either Message a
-// maybeResult :: (ParseResult a) -> Maybe a
-// eitherResult :: (ParseResult a) -> Either Message a
+maybeResult :: (Parsed a) -> Maybe a
+eitherResult :: (Parsed a) -> Either Message a
 
 ////////////////////////////////////////////////////////////////////////////////
 /// # Instances

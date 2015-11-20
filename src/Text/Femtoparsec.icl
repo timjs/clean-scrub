@@ -22,7 +22,7 @@ import qualified Data.List as List
 ////////////////////////////////////////////////////////////////////////////////
 
 parseOnly :: (Parser a) String -> Either Message a
-parseOnly p s = eitherResult $ parse p $ 'Slice'.wrap s
+parseOnly (Parser p) s = eitherResult $ p $ 'Slice'.wrap s
 
 maybeResult :: (Parsed a) -> Maybe a
 maybeResult (Done _ a) = Just a
@@ -32,24 +32,21 @@ eitherResult :: (Parsed a) -> Either Message a
 eitherResult (Done _ a) = Right a
 eitherResult (Fail _ e) = Left e
 
-// parse :: (Parser a) String -> Parsed a
-parse (Parser p) s :== p s
-
 ////////////////////////////////////////////////////////////////////////////////
 /// # Instances
 ////////////////////////////////////////////////////////////////////////////////
 
 instance Functor Parser where
-    fmap f p
-        = Parser (\s -> case parse p s of
+    fmap f (Parser p)
+        = Parser (\s -> case p s of
             Done s` a -> Done s` (f a)
             Fail s` e -> Fail s` e)
 
 instance Applicative Parser where
     pure a = Parser (\s -> Done s a)
 
-    (<*>) p q = Parser (\s -> case parse p s of
-        Done s` f -> case parse q s` of
+    (<*>) (Parser p) (Parser q) = Parser (\s -> case p s of
+        Done s` f -> case q s` of
             Done s`` a -> Done s`` (f a)
             Fail s`` e -> Fail s`` e
         Fail s` e -> Fail s` e)
@@ -57,8 +54,8 @@ instance Applicative Parser where
 instance Alternative Parser where
     empty = Parser (\s -> Fail s "")
 
-    (<|>) p q = Parser (\s -> case parse p s of
-        Fail _ _ -> parse q s // Backtracking!
+    (<|>) (Parser p) (Parser q) = Parser (\s -> case p s of
+        Fail _ _ -> q s // Backtracking!
         done -> done)
 
 ////////////////////////////////////////////////////////////////////////////////
