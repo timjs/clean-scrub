@@ -194,3 +194,6 @@ extendDatabase package dictionary
         transform name = package.Package.path </> maybe "" id package.manifest.info.sources </> replace moduleSeparator pathSeparator name <.> definitionExtension
         //XXX someday: transform name = scrubPackageRoot </> package.name </> package.version </> package.sources </> replace moduleSeparator pathSeparator name <.> definitionExtension
 
+
+
+

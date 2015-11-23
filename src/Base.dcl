@@ -21,11 +21,18 @@ import Data.Monoid
 import Data.Num //Control.Algebra
 
 import Data.Functor //Control.Functor
+from Data.List import instance Functor []
 import Control.Applicative
-from Control.Monad import class Monad(..)
+from Control.Monad import class Monad(..), >>|, >>=, return //TODO remove Traversable functions
 
-// import Data.Foldable
-// import Data.Traversable
+import Data.Foldable
+import Data.Traversable
 // import Data.Indexable
 // import Data.Sliceable
 
+
+
+from Data.List import head, tail, null,
+    isnull //TODO remove
+
+import StdDebug

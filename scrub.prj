@@ -12,17 +12,17 @@ Global
 		ExtraMemory:	8192
 		IntialHeapSize:	204800
 		HeapSizeMultiplier:	4096
-		ShowExecutionTime:	False
+		ShowExecutionTime:	True
 		ShowGC:	False
 		ShowStackSize:	False
 		MarkingCollector:	False
 		DisableRTSFlags:	False
 		StandardRuntimeEnv:	True
 		Profile
-			Memory:	True
+			Memory:	False
 			MemoryMinimumHeapSize:	0
-			Time:	True
-			Stack:	True
+			Time:	False
+			Stack:	False
 		Output
 			Output:	NoReturnType
 			Font:	Monaco
@@ -53,7 +53,7 @@ MainModule
 		NeverMemoryProfile:	False
 		NeverTimeProfile:	False
 		StrictnessAnalysis:	True
-		ListTypes:	StrictExportTypes
+		ListTypes:	NoTypes
 		ListAttributes:	True
 		Warnings:	True
 		Verbose:	True

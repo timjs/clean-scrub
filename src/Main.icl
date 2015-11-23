@@ -7,71 +7,62 @@ module Main
 
 import Base
 
-import Data.List
-import Data.Traversable
+// import Data.List
 
 import System.CommandLine
-import System.Console.Output
 import System.File
 import System.Process
 
+import System.Console.Output
 import Development.Scrub
 
 ////////////////////////////////////////////////////////////////////////////////
 /// # Command line interface
 ////////////////////////////////////////////////////////////////////////////////
 
-run :: !String [String] *World -> *World
+run :: !String [String] -> Run ()
 
-run "imports" args world
-    = seqSt showModuleImports args world
+run "imports" args =
+    traverse_ showModuleImports args
 
-run "modules" args world
-    = showMainModuleDictionary world
-    //TODO when implemented package registry
-    // | null args = showMainModuleDictionary world
-    // # (results,world) = mapSt createPackage args world
-    // # result = sequence results
-    // | isError result = putErr [toString $ fromError result] world
-    // # packages = fromOk result
-    // = seqSt showModuleDictionary packages world
+run "modules" [] =
+    showMainModuleDictionary
 
-run "dependencies" args world
-    # (result,world) = createPackage "." world
-    | isError result = putErr [toString $ fromError result] world
-    # package = fromOk result
-    # (result,world) = createModuleDictionary package world
-    | isError result = putErr [toString $ fromError result] world
-    # dictionary = fromOk result
-    = seqSt (showModuleDependencies dictionary) args world
+run "modules" args =
+    // traverse_ (createPackage >=> createModuleDictionary >=> showModuleDictionary) args
+    traverse createPackage args >>= traverse createModuleDictionary >>= traverse_ showModuleDictionary
 
-run "generate" args world
-    = undef
+run "dependencies" args =
+    createPackage "." >>=
+    createModuleDictionary >>= \dictionary ->
+    traverse_ (showModuleDependencies dictionary) args
 
-run "build" args world
-    = undef
+run "generate" args =
+    undef
 
-run "rebuild" args world
-    = undef
+run "build" args =
+    undef
 
-run "resolve-module" args world
-    = undef
+run "rebuild" args =
+    undef
 
-run "info" args world
-    | null args = showMainPackage world
-    # (results,world) = mapSt createPackage args world
-    # result = sequence results
-    | isError result = putErr [toString $ fromError result] world
-    # packages = fromOk result
-    = seqSt showPackage packages world
+run "resolve-module" args =
+    undef
 
-run "help" args world
-    = putStrLn helpMessage world
+run "info" [] =
+    showMainPackage
 
-run command args world
-    = putErr [quote command, " is not a scrub command, see 'scrub help'"] world
+run "info" args =
+    traverse createPackage args >>=
+    traverse_ showPackage
 
-helpMessage :== "This is Scrub v0.0.7 by Tim Steenvoorden"
+run "help" args =
+    put helpMessage
+
+run command args =
+    putErr [quote command, " is not a scrub command, see 'scrub help'"]
+
+helpMessage :== "This is Scrub v0.0.13 by Tim Steenvoorden"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// # Start
@@ -81,8 +72,11 @@ Start :: *World -> *World
 Start world
     # ([_:args],world) = getCommandLine world
     # (command,args) = null args ? ("help", []) $ (head args, tail args)
-    = run command args world
-    // # (result,world) = run command args world
+    # (result,world) = evalRun (run command args) world
+    = case result of
+        Left e -> putStrLn (toString e) world
+        // Right a -> putStrLn (toString a) world
+        Right a -> world
     // = case result of
     //     Ok _
     //         = snd $ exit 0 world

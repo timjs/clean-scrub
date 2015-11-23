@@ -7,6 +7,10 @@ from Data.Map import :: Map
 from Data.Set import :: Set
 from Data.Show import class toString(..)
 
+from Data.Functor import class Functor
+from Control.Applicative import class Applicative
+from Control.Monad import class Monad
+
 from Text.JSON import generic JSONDecode, generic JSONEncode, :: JSONNode
 from Text.JSON import generic JSONDecode, generic JSONEncode, :: JSONNode
 
@@ -55,6 +59,13 @@ parseVersion :: String -> Either String Version
 /// # Control flow
 ////////////////////////////////////////////////////////////////////////////////
 
+/// ## The `Throwing` Class
+
+class Throwing m | Monad m where
+    throw :: Error -> m a
+    // throw :: e -> m a
+    // catch :: (m a) (e -> m a) -> m a
+
 /// ## The `Run` Monad
 
 /// The `Run` monad is essentially an Exception monad stacked on top of the IO
@@ -65,7 +76,21 @@ parseVersion :: String -> Either String Version
 // :: Run a :== ExceptT Error (WriterT [Message] (IO)) a
 // :: Run a :== World -> (([Message], Either Error a),World)
 
-:: Run a :== *World -> *(Either Error a, *World)
+:: Run a =: Run (*World -> *(Either Error a, *World))
+
+instance Functor Run
+instance Applicative Run
+instance Monad Run
+
+execRun :: (Run a) *World -> *World
+evalRun :: (Run a) *World -> *(Either Error a, *World)
+// mapRun :: ((Either Error a) -> Either Error a) (Run a) -> Run a
+withError :: (e -> Error) (*World -> *(Either e a, *World)) -> Run a // liftError ?
+
+withRun :: (*World -> *(Either Error a, *World)) -> Run a
+withEither :: (Either Error a) -> Run a // liftEither ?
+withVoid :: (*World -> *World) -> Run () // liftWorld ?
+withValue :: (*World -> (a, *World)) -> Run a // liftValue ?
 
 /// ## Errors
 
@@ -84,13 +109,21 @@ instance toString Error
 derive JSONDecode Error, Either
 derive JSONEncode Error, Either
 
-/// ## Logging
+/// ## Logging and Printing
 
-logAct ms w   :== putAct ms w
-logRes ms x w :== putRes ms x w//TODO refactor?
-logErr ms w   :== putErr ms w
-logWrn ms w   :== putWrn ms w
-logInf ms w   :== putInf ms w
+// put, putAct, putRes, putErr, putWrn, putInf :: [String] -> Run ()
+put    s    :== withVoid $ putStrLn s
+putAct ms   :== put (green  ">>> " +++ foldSep ms +++ "...")
+putRes ms x :== put (blue   "=== " +++ foldSep ms +++ ": " +++ show x)
+putErr ms   :== put (red    "!!! " +++ foldSep ms)
+putWrn ms   :== put (yellow "*** " +++ foldSep ms)
+putInf ms   :== put (white  "... " +++ foldSep ms)
+
+logAct ms   :== putAct ms
+logRes ms x :== putRes ms x//TODO refactor?
+logErr ms   :== putErr ms
+logWrn ms   :== putWrn ms
+logInf ms   :== putInf ms
 
 // logAct ms w   :== w
 // logRes ms x w :== w//TODO refactor?
@@ -119,20 +152,22 @@ derive JSONDecode Package
 
 createPackage :: FilePath -> Run Package
 createPackageFromDependency :: DependencyInfo -> Run Package
-showMainPackage :: *World -> *World//TODO remove?
-showMainModuleDictionary :: *World -> *World//TODO remove?
+showMainPackage :: Run () //TODO remove?
+showMainModuleDictionary :: Run () //TODO remove?
 
-showPackage :: Package *World -> *World//TODO remove?
+showPackage :: Package -> Run () //TODO remove?
 
-showModuleImports :: FilePath *World -> *World//TODO remove?
+showModuleImports :: FilePath -> Run () //TODO remove?
 calculateModuleImports :: FilePath -> Run (Set Name)
-parseModuleImports :: String -> Result Error (Set Name)
+parseModuleImports :: String -> Either Error (Set Name)
 
 createModuleDictionary :: Package -> Run Dictionary
 addPackageDependency :: DependencyInfo -> Run Dictionary
+showModuleDictionary :: Dictionary -> Run ()
 
-showModuleDependencies :: Dictionary FilePath *World -> *World
+showModuleDependencies :: Dictionary FilePath -> Run ()
 calculateModuleDependencies :: FilePath Dictionary -> Run (Set Name)
+
 
 ////////////////////////////////////////////////////////////////////////////////
 /// # Manifest
@@ -174,9 +209,9 @@ derive JSONEncode Manifest
 
 readManifest :: FilePath -> Run Manifest
 readMainManifest :: Run Manifest
-showMainManifest :: *World -> *World
+showMainManifest :: Run ()
 
-showManifest :: Manifest *World -> *World
+showManifest :: Manifest -> Run ()
 writeManifest :: FilePath Manifest -> Run ()
 
 ////////////////////////////////////////////////////////////////////////////////
